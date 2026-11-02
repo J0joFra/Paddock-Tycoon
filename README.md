@@ -11,7 +11,13 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 - Con un gruppo completo costruisci fino a **3 tribune** per circuito, poi il **Gran Premio**.
 - Caselle speciali: **Radio Box** (carte), **Zona DRS** (+3 caselle), **Safety Car** (sosta libera),
   **Commissari FIA** (Stop & Go in Pit Lane), **Fornitori** Gomme e Carburante.
-- Scambi di circuiti e denaro tra giocatori; anche le CPU fanno offerte.
+- **Aste**: se nessuno compra un circuito, tutti rilanciano (+10 / +50 / +100) finché resta un solo offerente.
+- **Ipoteche e bancarotta**: se non puoi pagare si apre la schermata dei debiti, dove smonti tribune e ipotechi
+  circuiti (50% subito, riscatto al 55%). Perdi solo quando non hai più né soldi né beni da ipotecare.
+- **Affari con controfferte**: proponi circuiti e denaro; chi riceve può accettare, rifiutare o rilanciare con una controfferta.
+- **Sotto banco**: cedi un circuito ma tieni dal 10% al 75% dei suoi diritti per 1–3 giri, oppure stringi un
+  patto di non belligeranza. Allo Stop & Go puoi tentare la bustarella ai commissari (50% di riuscita).
+- Effetti sonori sintetizzati, disattivabili con l'icona dell'altoparlante.
 - Vince l'ultimo in gara, oppure il patrimonio più alto dopo 15 o 25 giri.
 - La partita si salva automaticamente nel browser.
 
