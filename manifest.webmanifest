@@ -1,0 +1,15 @@
+{
+  "name": "Paddock Tycoon",
+  "short_name": "Paddock",
+  "description": "Gioco da tavolo di compravendita a tema Formula 1.",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#111317",
+  "theme_color": "#111317",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
