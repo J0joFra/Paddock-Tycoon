@@ -26,6 +26,7 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 - Tendina **Affari** sul bordo destro; toccando un GP di un avversario puoi trattarlo subito, toccando un tuo GP lo gestisci.
 - **Campionato**: 3 o 5 gare da 8, 12 o 15 giri, con punti F1 (25-18-15-12-10-8) e ultima gara a punti doppi. Tra una gara e l'altra: ordine d'arrivo e classifica piloti.
 - **Tutorial guidato** alla prima partita, che evidenzia passo passo le parti dello schermo; si può rivedere dal Regolamento.
+- **Tracciati veri**: toccando un circuito si vede il suo tracciato reale disegnato, con bandiera di partenza e una monoposto che gira; miniature anche all'acquisto e all'asta.
 - **Scuderie**: ogni pilota ha un vantaggio (💰 Sponsor d'oro, 🔧 Ingegneri, ⚖️ Avvocati, 📣 Marketing, 🪽 Aerodinamica). Si sceglie toccando l'icona nella griglia di partenza.
 - **Difficoltà CPU**: Facile, Normale o Squalo.
 - **Strozzino del paddock**: prestiti fino a €300M da restituire +30% entro 3 giri, altrimenti riscuote con la mora.
@@ -47,3 +48,8 @@ Il regolamento completo è nel gioco, pulsante **Regole**.
 Sul telefono, aggiungendo il sito alla schermata Home (Android: menu → *Installa app*;
 iPhone: Condividi → *Aggiungi alla schermata Home*) il gioco si apre a schermo intero
 e bloccato in orizzontale grazie a `manifest.webmanifest`. In verticale il gioco chiede di ruotare il telefono.
+
+## Crediti
+
+I tracciati sono generati dai dati open source di [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits)
+(licenza MIT, © 2019-2025 Tomislav Bacinger). Dati e gioco non sono ufficiali e non hanno legami con la Formula 1.
