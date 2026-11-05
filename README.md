@@ -24,6 +24,12 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 - Monoposto animate sul tabellone, banner di turno, importi volanti, coriandoli, vibrazione e premi a fine partita.
 - La pista occupa tutto lo schermo e la plancia di gioco sta dentro il circuito.
 - Tendina **Affari** sul bordo destro; toccando un GP di un avversario puoi trattarlo subito, toccando un tuo GP lo gestisci.
+- **Scuderie**: ogni pilota ha un vantaggio (💰 Sponsor d'oro, 🔧 Ingegneri, ⚖️ Avvocati, 📣 Marketing, 🪽 Aerodinamica). Si sceglie toccando l'icona nella griglia di partenza.
+- **Difficoltà CPU**: Facile, Normale o Squalo.
+- **Strozzino del paddock**: prestiti fino a €300M da restituire +30% entro 3 giri, altrimenti riscuote con la mora.
+- 23 carte Radio Box, suono del motore che sale di giri a ogni passo, schermo sempre acceso durante la partita.
+- A fine partita: grafico del patrimonio giro per giro (con dettaglio al tocco) e premi.
+- Da tastiera: Spazio/Invio per lanciare o finire il turno, C per comprare, A per l'asta.
 - Ritmo normale o veloce, scelto nella griglia di partenza.
 - Effetti sonori sintetizzati, disattivabili con l'icona dell'altoparlante.
 - Vince l'ultimo in gara, oppure il patrimonio più alto dopo 15 o 25 giri.
