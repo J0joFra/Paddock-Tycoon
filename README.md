@@ -24,6 +24,8 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 - Monoposto animate sul tabellone, banner di turno, importi volanti, coriandoli, vibrazione e premi a fine partita.
 - La pista occupa tutto lo schermo e la plancia di gioco sta dentro il circuito.
 - Tendina **Affari** sul bordo destro; toccando un GP di un avversario puoi trattarlo subito, toccando un tuo GP lo gestisci.
+- **Campionato**: 3 o 5 gare da 8, 12 o 15 giri, con punti F1 (25-18-15-12-10-8) e ultima gara a punti doppi. Tra una gara e l'altra: ordine d'arrivo e classifica piloti.
+- **Tutorial guidato** alla prima partita, che evidenzia passo passo le parti dello schermo; si può rivedere dal Regolamento.
 - **Scuderie**: ogni pilota ha un vantaggio (💰 Sponsor d'oro, 🔧 Ingegneri, ⚖️ Avvocati, 📣 Marketing, 🪽 Aerodinamica). Si sceglie toccando l'icona nella griglia di partenza.
 - **Difficoltà CPU**: Facile, Normale o Squalo.
 - **Strozzino del paddock**: prestiti fino a €300M da restituire +30% entro 3 giri, altrimenti riscuote con la mora.

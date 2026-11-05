@@ -298,6 +298,14 @@ body{overflow:hidden;box-sizing:border-box;padding-block:6px;padding-right:max(3
 .nwtip{position:absolute;top:6px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;box-shadow:0 6px 18px rgba(21,23,28,.12);pointer-events:none;white-space:nowrap;display:grid;gap:2px;font-variant-numeric:tabular-nums}
 .legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;font-weight:700}
 .legend span{display:flex;align-items:center;gap:5px}
+/* Tutorial */
+.coach{position:fixed;inset:0;z-index:90}
+.coach .spot{position:fixed;border-radius:14px;box-shadow:0 0 0 9999px rgba(21,23,28,.62);outline:3px solid var(--gold);transition:all .25s ease;pointer-events:none}
+.coach .spot.none{left:50%;top:50%;width:0;height:0;outline:0}
+.coach .bubble{position:fixed;background:var(--surface);border-radius:14px;padding:12px 14px;display:grid;gap:6px;box-shadow:0 14px 40px rgba(21,23,28,.3);animation:pop .2s ease-out}
+.coach .bubble b{font-size:17px;font-weight:900;font-style:italic}
+.coach .bubble p{margin:0;font-size:14px;color:var(--ink)}
+.coach .tstep{font-size:11px;font-weight:700;color:var(--red);letter-spacing:.08em}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -388,6 +396,9 @@ const rndTeam=()=>TEAM_IDS[Math.floor(Math.random()*TEAM_IDS.length)];
 const tm=p=>TEAMS[p&&p.team]||null;
 const DF={easy:{reserve:260,build:380,bid:.8,accept:1.0,trade:.4},normal:{reserve:150,build:250,bid:1,accept:1.1,trade:1},shark:{reserve:70,build:140,bid:1.2,accept:1.25,trade:1}};
 const df=()=>DF[(S&&S.diff)||'normal'];
+const PTS=[25,18,15,12,10,8];
+const RACES=['GP del Bahrein','GP di Monaco','GP del Canada','GP di Gran Bretagna','GP del Belgio',"GP d'Italia",'GP di Singapore','GP del Giappone','GP del Brasile','GP di Las Vegas'];
+const MODES=[['single','Partita singola'],['c3','🏆 Campionato · 3 gare'],['c5','🏆 5 gare']];
 const DIFFS=[['easy','🙂 Facile'],['normal','😐 Normale'],['shark','🦈 Squalo']];
 
 const CARDS=[
@@ -571,7 +582,13 @@ function endGame(){
   recordHist();
   S.over=true;S.phase='over';
   const w=ranking()[0];
-  setMsg(`🏁 ${w.name} campione!`,'good');log(`Bandiera a scacchi: vince ${w.name}`);
+  const c=S.champ;
+  if(c&&!S.scored){
+    S.scored=true;const mult=c.idx===c.n-1?2:1;
+    S.gained=ranking().map((p,k)=>{const g=(PTS[k]||0)*mult;c.pts[p.id]+=g;return g;});
+    c.wins[w.id]++;c.results.push(ranking().map(p=>p.id));
+  }
+  setMsg(c?`🏁 ${w.name} vince il ${c.names[c.idx]}!`:`🏁 ${w.name} campione!`,'good');log(`Bandiera a scacchi: vince ${w.name}`);
   sfx('win');save();render();confetti(220);showGameOver();
 }
 
@@ -1030,9 +1047,9 @@ function render(){
   now.innerHTML=S.over?'<small>Bandiera a scacchi</small>':`${tok(p)} ${esc(p.name)} <small>· giro ${S.round}${S.limit?'/'+S.limit:''}</small>`;
   msg.textContent=S.msg?S.msg.text:'';msg.className='msg '+(S.msg?S.msg.kind:'');
   if(!busy){$('#d1').innerHTML=dieHTML(S.dice[0]);$('#d2').innerHTML=dieHTML(S.dice[1]);}
-  $('#pot').innerHTML=(S.weekend!=null?`<span>🏁 GP ${SQ[S.weekend].code} ×2</span>`:'')+`<span class="${S.pot>=100?'full':''}">🚨 SC ${fmt(S.pot||0)}</span>`;
+  $('#pot').innerHTML=(S.champ?`<span>🏆 Gara ${S.champ.idx+1}/${S.champ.n}</span>`:'')+(S.weekend!=null?`<span>🏁 GP ${SQ[S.weekend].code} ×2</span>`:'')+`<span class="${S.pot>=100?'full':''}">🚨 SC ${fmt(S.pot||0)}</span>`;
   $('#tower').innerHTML=S.players.map(q=>`<button class="chip ${q===p&&!S.over?'turn':''} ${q.out?'out':''}" data-act="pinfo" data-i="${q.id}">
-    ${tok(q)}<span class="nm">${tm(q)?`<span aria-label="${esc(tm(q).n)}">${tm(q).i}</span>`:''}${esc(q.name)}${q.cpu?'<span class="b">🤖</span>':''}${q.stopgo?'<span class="b red">S&amp;G</span>':''}${q.flags?'<span class="b gold">🏁'+q.flags+'</span>':''}${q.loan?'<span class="b red">🦈</span>':''}</span>
+    ${tok(q)}<span class="nm">${tm(q)?`<span aria-label="${esc(tm(q).n)}">${tm(q).i}</span>`:''}${esc(q.name)}${q.cpu?'<span class="b">🤖</span>':''}${q.stopgo?'<span class="b red">S&amp;G</span>':''}${q.flags?'<span class="b gold">🏁'+q.flags+'</span>':''}${q.loan?'<span class="b red">🦈</span>':''}${S.champ?`<span class="b">${S.champ.pts[q.id]}pt</span>`:''}</span>
     <span class="cash">${q.out?'OUT':fmt(q.cash)}</span></button>`).join('');
   renderActions();
   $('#ticker').innerHTML=`${ICON_LOG}<span>${esc(S.log[0]||'')}</span>`;
@@ -1188,8 +1205,9 @@ function showRules(){
     ['🚨 Montepremi SC','Tasse, multe e bustarelle finiscono nel montepremi: chi si ferma sulla Safety Car lo incassa.'],
     ['🏎️ Scuderie','Ogni pilota ha un vantaggio: '+TEAM_IDS.map(k=>TEAMS[k].i+' '+TEAMS[k].n).join(', ')+'.'],
     ['🦈 Strozzino','Nella scheda Circuiti: fino a €300M subito, da restituire +30% entro 3 giri. In ritardo: +20% di mora.'],
-    ['🏆 Fine','Ultimo in gara, oppure patrimonio più alto a fine giri.']];
-  openSheet(`<h2>Regolamento</h2><div class="rules">${R.map(([t,d])=>`<div><b>${t}</b>${d}</div>`).join('')}</div><div class="row"><button class="btn dark" data-act="close">Chiudi</button></div>`);
+    ['🏆 Campionato','3 o 5 gare a giri contati. Punti F1 per l\'ordine d\'arrivo: 25-18-15-12-10-8. L\'ultima gara vale doppio.'],
+    ['🏁 Fine','Ultimo in gara, oppure patrimonio più alto a fine giri.']];
+  openSheet(`<h2>Regolamento</h2><div class="rules">${R.map(([t,d])=>`<div><b>${t}</b>${d}</div>`).join('')}</div><div class="row"><button class="btn primary" data-act="tutorial">🎓 Tutorial guidato</button><button class="btn dark" data-act="close">Chiudi</button></div>`);
 }
 function showLog(){openSheet(`<h2>Direzione gara</h2><ol class="logl">${S.log.map(t=>`<li>${esc(t)}</li>`).join('')}</ol><div class="row"><button class="btn dark" data-act="close">Chiudi</button></div>`);}
 function awards(){
@@ -1221,8 +1239,24 @@ document.addEventListener('pointermove',e=>{
   tip.innerHTML=`<b>Giro ${h[k].r}</b>${rows.map(([p,v])=>`<div>${tok(p)} ${esc(p.name)} <b>${fmt(v)}</b></div>`).join('')}`;
   tip.hidden=false;const left=px/W*r.width;tip.style.left=(left>r.width/2?left-tip.offsetWidth-10:left+10)+'px';
 });
+function champOrder(c){return S.players.map(p=>p.id).sort((a,b)=>c.pts[b]-c.pts[a]||c.wins[b]-c.wins[a]);}
+function champTable(c){
+  return `<h3>Classifica piloti</h3><div class="rank">${champOrder(c).map((id,k)=>`<div><span class="pos">${k+1}</span><span>${tok(P(id))} ${esc(P(id).name)}${c.wins[id]?` <small class="muted">· ${c.wins[id]} ${c.wins[id]>1?'vittorie':'vittoria'}</small>`:''}</span><b>${c.pts[id]} pt</b></div>`).join('')}</div>`;
+}
 function showGameOver(){
-  const r=ranking();
+  const r=ranking(),c=S.champ;
+  if(c){
+    const last=c.idx>=c.n-1,lead=P(champOrder(c)[0]);
+    if(last&&!S.champFx){S.champFx=true;setTimeout(()=>{confetti(260);sfx('win');},900);}
+    openSheet(`<h2>${last?`🏆 ${esc(lead.name)} campione del mondo!`:`🏁 ${esc(c.names[c.idx])}`}</h2>
+      <h3>Ordine d'arrivo${last?' · punti doppi':''}</h3>
+      <div class="rank">${r.map((p,k)=>`<div><span class="pos">${k+1}</span><span>${tok(p)} ${esc(p.name)}${p.out?' · out':''}</span><b>+${(S.gained||[])[k]||0} pt</b></div>`).join('')}</div>
+      ${champTable(c)}
+      ${chartHTML()}
+      ${awards()}
+      <div class="row">${last?'<button class="btn primary" data-act="setup">Nuovo campionato</button>':`<button class="btn primary" data-act="nextrace">▶ ${esc(c.names[c.idx+1])}</button>`}<button class="btn dark" data-act="close">Tabellone</button></div>`);
+    return;
+  }
   openSheet(`<h2>🏁 ${esc(r[0].name)} campione!</h2>
     <div class="rank">${r.map((p,k)=>`<div><span class="pos">${k+1}</span><span>${tok(p)} ${esc(p.name)}${p.out?' · out':''}</span><b>${fmt(netWorth(p))}</b></div>`).join('')}</div>
     ${chartHTML()}
@@ -1231,7 +1265,7 @@ function showGameOver(){
 }
 
 // ================= Setup =================
-let setup={fast:false,diff:'normal',players:[{name:'Tu',cpu:false,color:COLORS[0],team:rndTeam()},{name:'CPU Alfa',cpu:true,color:COLORS[1],team:rndTeam()},{name:'CPU Bravo',cpu:true,color:COLORS[2],team:rndTeam()}],limit:0};
+let setup={mode:'single',climit:12,fast:false,diff:'normal',players:[{name:'Tu',cpu:false,color:COLORS[0],team:rndTeam()},{name:'CPU Alfa',cpu:true,color:COLORS[1],team:rndTeam()},{name:'CPU Bravo',cpu:true,color:COLORS[2],team:rndTeam()}],limit:0};
 function syncNames(){setup.players.forEach((p,i)=>{const v=$('#pname-'+i);if(v)p.name=v.value;});const l=$('#limit');if(l)setup.limit=+l.dataset.v;}
 function showSetup(){
   const rows=setup.players.map((p,i)=>`<div class="prow">
@@ -1241,11 +1275,14 @@ function showSetup(){
     <div class="seg"><button class="${p.cpu?'':'on'}" data-act="human" data-i="${i}">👤</button><button class="${p.cpu?'on':''}" data-act="cpu" data-i="${i}">🤖</button></div>
     <button class="btn xs" data-act="rm" data-i="${i}" ${setup.players.length<=2?'disabled':''} aria-label="Rimuovi">✕</button></div>`).join('');
   openSheet(`<h2>Griglia di partenza</h2>
+    <div class="seg">${MODES.map(([v,l])=>`<button class="${setup.mode===v?'on':''}" data-act="mode" data-v="${v}">${l}</button>`).join('')}</div>
     <div class="tiles" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${rows}</div>
     <div class="row"><button class="btn sm" data-act="add" ${setup.players.length>=6?'disabled':''}>+ Pilota</button>
       <div class="seg">${[[false,'Ritmo normale'],[true,'Veloce']].map(([v,l])=>`<button class="${setup.fast===v?'on':''}" data-act="pace" data-v="${v}">${l}</button>`).join('')}</div>
       <div class="seg">${DIFFS.map(([v,l])=>`<button class="${setup.diff===v?'on':''}" data-act="diff" data-v="${v}">${l}</button>`).join('')}</div>
-      <div class="seg" id="limit" data-v="${setup.limit}">${[[0,'∞ Ultimo in gara'],[15,'15 giri'],[25,'25 giri']].map(([v,l])=>`<button class="${setup.limit==v?'on':''}" data-act="lim" data-v="${v}">${l}</button>`).join('')}</div></div>
+      ${setup.mode==='single'
+        ?`<div class="seg" id="limit" data-v="${setup.limit}">${[[0,'∞ Ultimo in gara'],[15,'15 giri'],[25,'25 giri']].map(([v,l])=>`<button class="${setup.limit==v?'on':''}" data-act="lim" data-v="${v}">${l}</button>`).join('')}</div>`
+        :`<div class="seg">${[8,12,15].map(v=>`<button class="${setup.climit==v?'on':''}" data-act="climit" data-v="${v}">${v} giri a gara</button>`).join('')}</div>`}</div>
     <div class="teams">${TEAM_IDS.map(k=>`<span>${TEAMS[k].i} <b>${TEAMS[k].n}</b> ${TEAMS[k].d}</span>`).join('')}</div>
     <div class="row"><button class="btn primary" data-act="start">🚦 Via!</button>${S&&!S.over?'<button class="btn out" data-act="close">Riprendi</button>':''}</div>`,!!S);
 }
@@ -1278,19 +1315,68 @@ async function chooseOrder(){
   closeSheet();
   return w.id;
 }
-async function startGame(){
+async function startGame(champ=null){
   syncNames();
   setup.players.forEach((p,i)=>{p.name=(p.name||'').trim()||`Pilota ${i+1}`;});
+  if(!champ&&setup.mode!=='single'){
+    const n=setup.mode==='c5'?5:3;
+    const names=shuffle(RACES.filter(r=>r!=='GP di Las Vegas')).slice(0,n-1).concat('GP di Las Vegas');
+    champ={n,idx:0,names,pts:setup.players.map(()=>0),wins:setup.players.map(()=>0),limit:setup.climit||12,results:[]};
+  }
   S={players:setup.players.map((p,i)=>({id:i,name:p.name,color:p.color,cpu:p.cpu,team:p.team||rndTeam(),cash:START_CASH,pos:0,out:false,stopgo:false,flags:0,loan:null})),
     own:{},roys:[],pacts:[],turn:0,phase:'roll',doubles:0,lastDbl:false,dice:[5,2],round:1,limit:setup.limit,
     deck:shuffle([...CARDS.keys()]),deckPos:0,log:[],msg:null,over:false,pending:null,asked:{},
-    pot:0,weekend:null,stats:{},first:0,fast:setup.fast,diff:setup.diff,hist:[]};
+    pot:0,weekend:null,stats:{},first:0,fast:setup.fast,diff:setup.diff,hist:[],champ};
+  if(champ) S.limit=champ.limit;
   S.phase='order';
   $('#cars').innerHTML='';for(const k in carRot)delete carRot[k];for(const k in prevCash)delete prevCash[k];
   closeSheet();render();
+  if(champ){sfx('engine');await ask(`<h2>🏆 ${esc(champ.names[champ.idx])}</h2><p>Gara ${champ.idx+1} di ${champ.n} · ${champ.limit} giri${champ.idx===champ.n-1?' · <b>punti doppi</b>':''}</p>${champ.idx?champTable(champ):''}<div class="row"><button class="btn primary" data-choice="go">Allo schieramento</button></div>`);closeSheet();}
+  if(!tutDone()) await tutorial();
   const w=await chooseOrder();
   S.first=S.turn=w;S.phase='roll';recordHist();
   log('Semaforo verde!');pickWeekend();sfx('engine');startTurn();
+}
+
+// ================= Tutorial =================
+const TUT_KEY='paddock-tycoon-tutorial';
+const tutDone=()=>{try{return localStorage.getItem(TUT_KEY)==='1';}catch(e){return true;}};
+const TUT=[
+  ['#board','🏁 Benvenuto in pista','Il tabellone è un circuito di 32 caselle. Le monoposto girano in senso antiorario; a ogni passaggio dal Semaforo Verde incassi €150M.'],
+  ['.dice','🎲 I dadi','Tocca Lancia per muoverti. Con un doppio rilanci, ma al terzo doppio di fila prendi uno Stop & Go.'],
+  ['#c22','🏟️ I circuiti','Tocca un circuito per vedere prezzo e diritti. Se ti fermi su uno libero puoi comprarlo o mandarlo all\'asta.'],
+  ['#c1','🎨 Gruppi colore','Possiedi tutti i circuiti dello stesso colore? I diritti raddoppiano e puoi costruire tribune e poi il Gran Premio.'],
+  ['#tower','🏎️ I piloti','Soldi in cassa e scuderia di ogni pilota. Toccane uno per vedere i suoi circuiti e proporgli un affare.'],
+  ['#actions','🕹️ La plancia','Qui lanci, compri, mandi all\'asta e chiudi il turno. Da “Circuiti” gestisci tribune, ipoteche e lo strozzino.'],
+  ['#pot','🚨 Eventi del giro','Ogni giro un GP del weekend paga diritti doppi. Tasse e multe riempiono il montepremi: chi si ferma sulla Safety Car lo incassa.'],
+  ['#tab','🤝 Affari','Apri la tendina per trattare con gli avversari: soldi, circuiti, controfferte e accordi sotto banco.'],
+  [null,'🚦 Pronto?','Se finisci i soldi puoi ipotecare e smontare; perdi solo quando non ti resta nulla. Buona gara!'],
+];
+function tutorial(){
+  return new Promise(res=>{
+    let k=0;const ov=document.createElement('div');ov.className='coach';document.body.appendChild(ov);
+    const finish=()=>{ov.remove();removeEventListener('resize',draw);try{localStorage.setItem(TUT_KEY,'1');}catch(e){}res();};
+    function draw(){
+      const [sel,t,d]=TUT[k],el=sel&&document.querySelector(sel),r=el&&el.offsetParent!==null?el.getBoundingClientRect():null;
+      const vw=innerWidth,vh=innerHeight,bw=Math.min(320,vw-32);
+      let spot='',bx=(vw-bw)/2,by=vh/2-90;
+      if(r&&r.width){
+        const pad=6;spot=`<div class="spot" style="left:${r.left-pad}px;top:${r.top-pad}px;width:${r.width+pad*2}px;height:${r.height+pad*2}px"></div>`;
+        const big=r.width*r.height>vw*vh*.5;
+        if(big){bx=(vw-bw)/2;by=vh/2-90;}
+        else if(r.right+bw+20<vw){bx=r.right+14;by=Math.min(Math.max(12,r.top),vh-200);}
+        else if(r.left-bw-20>0){bx=r.left-bw-14;by=Math.min(Math.max(12,r.top),vh-200);}
+        else{bx=Math.min(Math.max(12,r.left),vw-bw-12);by=r.bottom+180<vh?r.bottom+12:Math.max(12,r.top-190);}
+      }else spot='<div class="spot none"></div>';
+      ov.innerHTML=`${spot}<div class="bubble" style="left:${bx}px;top:${by}px;width:${bw}px" role="dialog" aria-live="polite">
+        <div class="tstep">${k+1} / ${TUT.length}</div><b>${t}</b><p>${d}</p>
+        <div class="row"><button class="btn sm out" data-tut="skip">Salta</button><button class="btn sm primary" data-tut="next">${k===TUT.length-1?'Via!':'Avanti'}</button></div></div>`;
+      const nb=ov.querySelector('[data-tut=next]');nb&&nb.focus({preventScroll:true});
+    }
+    ov.addEventListener('click',e=>{const b=e.target.closest('[data-tut]');if(!b)return;e.stopPropagation();
+      if(b.dataset.tut==='skip'){finish();return;} sfx('bid');k++; if(k>=TUT.length)finish(); else draw();});
+    addEventListener('resize',draw);draw();
+  });
 }
 
 // ================= Eventi =================
@@ -1314,6 +1400,10 @@ const ACT={
   repay:()=>{const p=cur();if(!p.loan||p.cash<p.loan.owe)return;p.cash-=p.loan.owe;log(`${p.name} salda lo strozzino (${fmt(p.loan.owe)})`);p.loan=null;sfx('pay');save();render();showManage();},
   team:b=>{syncNames();const p=setup.players[+b.dataset.i];p.team=TEAM_IDS[(TEAM_IDS.indexOf(p.team)+1)%TEAM_IDS.length];showSetup();},
   diff:b=>{syncNames();setup.diff=b.dataset.v;showSetup();},
+  mode:b=>{syncNames();setup.mode=b.dataset.v;showSetup();},
+  climit:b=>{syncNames();setup.climit=+b.dataset.v;showSetup();},
+  nextrace:()=>{const c=S.champ;if(!c||c.idx>=c.n-1)return;c.idx++;startGame(c);},
+  tutorial:()=>{closeSheet();tutorial();},
   tradefor:b=>{closeSheet();startTrade({to:+b.dataset.o,get:b.dataset.i!==undefined?[+b.dataset.i]:[]});},
   'tr-to':b=>{readSelects();TR.o.to=+b.dataset.i;TR.o.get=[];TR.o.cashGet=0;paintEditor();},
   'tr-pick':b=>{readSelects();const a=TR.o[b.dataset.side],i=+b.dataset.i,k=a.indexOf(i);if(k>=0)a.splice(k,1);else a.push(i);paintEditor();},
@@ -1331,7 +1421,7 @@ const ACT={
   col:b=>{syncNames();const p=setup.players[+b.dataset.i],used=setup.players.map(x=>x.color);let k=COLORS.indexOf(p.color);for(let n=0;n<6;n++){k=(k+1)%6;if(!used.includes(COLORS[k]))break;}p.color=COLORS[k];showSetup();},
 };
 function after(b){save();render();if(b.dataset.ctx==='info')showInfo(+b.dataset.i);else showManage();}
-const NO_GAME_OK=['fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info','team','diff'];
+const NO_GAME_OK=['fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info','team','diff','mode','climit','tutorial'];
 document.addEventListener('pointerdown',()=>ac(),{once:true});
 document.addEventListener('click',e=>{
   const c=e.target.closest('[data-choice]');
@@ -1360,6 +1450,7 @@ function boot(){
   if(saved&&saved.players&&!saved.over){
     S=saved;busy=false;S.roys=S.roys||[];S.pacts=S.pacts||[];S.pot=S.pot||0;S.stats=S.stats||{};S.first=S.first||0;
     if(S.phase==='order'){S.phase='roll';}
+    if(S.champ){setup.mode=S.champ.n===5?'c5':'c3';setup.climit=S.champ.limit;}
     setup.fast=!!S.fast;setup.diff=S.diff||'normal';S.hist=S.hist||[];
     setup.players.forEach((q,k)=>q.team=S.players[k].team||rndTeam());
     setup.players=S.players.map(p=>({name:p.name,cpu:p.cpu,color:p.color}));setup.limit=S.limit||0;
