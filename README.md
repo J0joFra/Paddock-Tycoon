@@ -22,6 +22,8 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 - **GP del weekend**: a ogni giro un circuito a caso ospita il Gran Premio e i suoi diritti raddoppiano.
 - **Montepremi Safety Car**: tasse, multe e bustarelle finiscono nel montepremi; chi si ferma sulla Safety Car lo incassa.
 - Monoposto animate sul tabellone, banner di turno, importi volanti, coriandoli, vibrazione e premi a fine partita.
+- La pista occupa tutto lo schermo e la plancia di gioco sta dentro il circuito.
+- Tendina **Affari** sul bordo destro; toccando un GP di un avversario puoi trattarlo subito, toccando un tuo GP lo gestisci.
 - Ritmo normale o veloce, scelto nella griglia di partenza.
 - Effetti sonori sintetizzati, disattivabili con l'icona dell'altoparlante.
 - Vince l'ultimo in gara, oppure il patrimonio più alto dopo 15 o 25 giri.

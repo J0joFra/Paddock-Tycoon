@@ -252,6 +252,40 @@ button{font:inherit;color:inherit}
 .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px}
 .stats div{background:var(--surface-2);border-radius:10px;padding:6px 10px;font-size:12px;color:var(--muted);font-weight:700}
 .stats b{display:block;color:var(--ink);font-size:14px}
+/* Pista a tutto schermo: la plancia sta dentro il circuito */
+html,body{height:100%}
+body{overflow:hidden;box-sizing:border-box;padding-block:6px;padding-right:max(34px,calc(env(safe-area-inset-right,0px) + 28px))}
+.app{max-width:none;height:100%;display:block;margin:0}
+.boardcol{height:100%;min-height:0;display:block}
+.board{width:100%;height:100%;max-width:none;aspect-ratio:auto;box-sizing:border-box;border-radius:14px;grid-template-columns:1.25fr repeat(7,1fr) 1.25fr;grid-template-rows:1.25fr repeat(7,1fr) 1.25fr}
+.cell{font-size:clamp(8px,2.8vmin,15px)}
+.cell.k{font-size:clamp(9px,3.1vmin,17px)}
+.center{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(6px,2vmin,16px);align-items:stretch;justify-items:stretch;padding:clamp(6px,1.6vmin,14px);text-align:left}
+.stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(3px,1.4vmin,10px);text-align:center;min-width:0;min-height:0}
+.center .side{overflow-y:auto;min-height:0;gap:clamp(5px,1.4vmin,10px);align-content:center;overscroll-behavior:contain;scrollbar-width:none}
+.center .brand{font-size:clamp(14px,4.8vmin,32px)}
+.die{width:clamp(26px,9.5vmin,60px)}
+.msg{font-size:clamp(11px,3.1vmin,17px)}
+.now{font-size:clamp(11px,3vmin,16px)}
+.bar .logo{display:none}
+.bar{justify-content:flex-end}
+.ib{width:clamp(30px,8vmin,38px);height:clamp(30px,8vmin,38px)}
+.tower{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:5px}
+.chip{padding:3px 7px}
+.chip .cash{font-size:clamp(13px,3.6vmin,18px)}
+.act{padding:clamp(6px,1.6vmin,10px);gap:6px;background:var(--surface-2);border:0}
+.act .btn:not(.primary):not(.out){background:var(--surface)}
+.btn{min-height:clamp(38px,10vmin,52px)}
+.btn.sm{min-height:clamp(30px,8vmin,38px)}
+@media (max-aspect-ratio:1/1){.center{grid-template-columns:1fr}}
+.backdrop{justify-content:flex-end;align-items:stretch;background:rgba(21,23,28,.32)}
+.sheet{width:min(470px,100%);max-width:none;max-height:none;height:100%;box-sizing:border-box;border-radius:18px 0 0 18px;align-content:start;animation:slide .22s ease-out;box-shadow:-12px 0 40px rgba(21,23,28,.2);padding:14px max(16px,calc(env(safe-area-inset-right,0px) + 12px)) calc(14px + env(safe-area-inset-bottom,0px)) 16px}
+@keyframes slide{from{transform:translateX(48px);opacity:0}}
+.tab{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:15;writing-mode:vertical-rl;background:var(--red);color:var(--on-red);border:0;border-radius:12px 0 0 12px;padding:16px calc(7px + env(safe-area-inset-right,0px)) 16px 7px;font-weight:900;font-size:13px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;box-shadow:-4px 0 14px rgba(225,10,30,.3)}
+.tab:disabled{background:var(--line);color:var(--muted);box-shadow:none;cursor:not-allowed}
+.tab:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.ctl{display:flex;gap:6px;flex-wrap:wrap}
+.ctl .btn{flex:1 1 auto}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -273,6 +307,7 @@ button{font:inherit;color:inherit}
     <button class="ticker" id="ticker" data-act="log"></button>
   </aside>
 </main>
+<button class="tab" id="tab" data-act="trade" hidden>🤝 Affari</button>
 
 <div class="rotate">
   <div class="phone" aria-hidden="true"></div>
@@ -882,10 +917,14 @@ async function negotiate(o){
   log('Trattativa arenata');return false;
 }
 function say(t){return ask(`<h2>${t}</h2><div class="row"><button class="btn primary" data-choice="ok">OK</button></div>`).then(()=>closeSheet());}
-async function startTrade(){
-  if(busy) return; busy=true; render();
-  const p=cur(),q=rivals(p)[0];
-  const o=await editOffer(blankOffer(p.id,q.id),false,'Proponi affare');
+function canTrade(){return !!S&&!S.over&&!busy&&!cur().cpu&&['roll','end'].includes(S.phase)&&rivals(cur()).length>0;}
+async function startTrade(pre={}){
+  if(!canTrade()) return; busy=true; render();
+  const p=cur(),q=pre.to!=null&&!P(pre.to).out?P(pre.to):rivals(p)[0];
+  const draft=blankOffer(p.id,q.id);
+  if(pre.get) draft.get=pre.get.filter(i=>tradable(q).includes(i));
+  if(pre.give) draft.give=pre.give.filter(i=>tradable(p).includes(i));
+  const o=await editOffer(draft,false,'Proponi affare');
   closeSheet();
   if(o) await negotiate(o);
   busy=false;save();render();
@@ -908,8 +947,10 @@ function side(i){if(i%8===0)return'k';if(i<8)return'b';if(i<16)return'l';if(i<24
 function buildBoard(){
   let h='';
   SQ.forEach((sq,i)=>{const[r,c]=coord(i);h+=`<button class="cell side-${side(i)}" id="c${i}" data-act="info" data-i="${i}" style="grid-area:${r}/${c}" aria-label="${esc(sq.name)}"></button>`;});
-  h+=`<div class="center"><div class="brand">Paddock <b>Tycoon</b></div><div class="dice"><div class="die" id="d1">${dieHTML(5)}</div><div class="die" id="d2">${dieHTML(2)}</div></div><div class="now" id="now"></div><div class="msg" id="msg"></div><div class="pot" id="pot"></div></div><div class="cars" id="cars"></div><div class="banner" id="banner"></div>`;
+  h+=`<div class="center"><div class="stage"><div class="brand">Paddock <b>Tycoon</b></div><div class="dice"><div class="die" id="d1">${dieHTML(5)}</div><div class="die" id="d2">${dieHTML(2)}</div></div><div class="now" id="now"></div><div class="msg" id="msg"></div><div class="pot" id="pot"></div></div></div><div class="cars" id="cars"></div><div class="banner" id="banner"></div>`;
+  const panel=document.querySelector('.side');
   $('#board').innerHTML=h;
+  if(panel) $('.center').appendChild(panel);
 }
 function cellHTML(i){
   const sq=SQ[i],o=S&&S.own[i];
@@ -938,17 +979,18 @@ function render(){
   });
   const now=$('#now'),msg=$('#msg');
   placeCars();
-  if(!S){$('#pot').innerHTML='';now.innerHTML='<small>Griglia di partenza</small>';msg.textContent='';$('#tower').innerHTML='';$('#actions').innerHTML=`<div class="row"><button class="btn primary" data-act="setup">Nuova partita</button></div>`;$('#ticker').innerHTML='';return;}
+  if(!S){$('#tab').hidden=true;$('#pot').innerHTML='';now.innerHTML='<small>Griglia di partenza</small>';msg.textContent='';$('#tower').innerHTML='';$('#actions').innerHTML=`<div class="row"><button class="btn primary" data-act="setup">Nuova partita</button></div>`;$('#ticker').innerHTML='';return;}
   const p=cur();
   now.innerHTML=S.over?'<small>Bandiera a scacchi</small>':`${tok(p)} ${esc(p.name)} <small>· giro ${S.round}${S.limit?'/'+S.limit:''}</small>`;
   msg.textContent=S.msg?S.msg.text:'';msg.className='msg '+(S.msg?S.msg.kind:'');
   if(!busy){$('#d1').innerHTML=dieHTML(S.dice[0]);$('#d2').innerHTML=dieHTML(S.dice[1]);}
   $('#pot').innerHTML=(S.weekend!=null?`<span>🏁 GP ${SQ[S.weekend].code} ×2</span>`:'')+`<span class="${S.pot>=100?'full':''}">🚨 SC ${fmt(S.pot||0)}</span>`;
   $('#tower').innerHTML=S.players.map(q=>`<button class="chip ${q===p&&!S.over?'turn':''} ${q.out?'out':''}" data-act="pinfo" data-i="${q.id}">
-    ${tok(q)}<span class="nm">${esc(q.name)}${q.cpu?'<span class="b">CPU</span>':''}${q.stopgo?'<span class="b red">S&amp;G</span>':''}${q.flags?'<span class="b gold">🏁'+q.flags+'</span>':''}</span>
+    ${tok(q)}<span class="nm">${esc(q.name)}${q.cpu?'<span class="b">🤖</span>':''}${q.stopgo?'<span class="b red">S&amp;G</span>':''}${q.flags?'<span class="b gold">🏁'+q.flags+'</span>':''}</span>
     <span class="cash">${q.out?'OUT':fmt(q.cash)}</span></button>`).join('');
   renderActions();
   $('#ticker').innerHTML=`${ICON_LOG}<span>${esc(S.log[0]||'')}</span>`;
+  const tab=$('#tab');tab.hidden=false;tab.disabled=!canTrade();
   floats();
 }
 const IC={
@@ -1021,7 +1063,7 @@ function renderActions(){
   else if(S.phase==='end') main=`<div class="row"><button class="btn primary" data-act="end" ${busy?'disabled':''}>Fine turno ›</button></div>`;
   else main=`<div class="waitline">…</div>`;
   const can=!busy&&['roll','end','buy'].includes(S.phase);
-  a.innerHTML=main+`<div class="row"><button class="btn sm" data-act="manage" ${can?'':'disabled'}>🏟️ Circuiti · ${propsOf(p).length}</button><button class="btn sm" data-act="trade" ${can&&S.phase!=='buy'&&rivals(p).length?'':'disabled'}>🤝 Affari</button></div>`;
+  a.innerHTML=main+`<div class="row"><button class="btn sm" data-act="manage" ${can?'':'disabled'}>🏟️ Circuiti · ${propsOf(p).length}</button><button class="btn sm" data-act="log">📋 Cronaca</button></div>`;
 }
 
 // ================= Schede =================
@@ -1043,6 +1085,14 @@ function showInfo(i){
     if(o.mort) facts.push('Ipotecato');
     roysOn(i).forEach(r=>facts.push(`🕶️ ${esc(P(r.holder).name)} ${r.pct}% fino al giro ${r.until}`));
     h+=`<div class="facts">${facts.map(f=>`<span class="fact">${f}</span>`).join('')}</div>`;
+    if(S&&!S.over&&!cur().cpu){
+      const me=cur(),turnOk=!busy&&['roll','end','buy'].includes(S.phase);
+      if(o.owner===me.id&&turnOk) h+=`<h3>Gestisci</h3><div class="ctl">${ctlButtons(me,i,'info')}</div>`;
+      else if(o.owner!==me.id&&canTrade()){
+        const ok=tradable(P(o.owner)).includes(i);
+        h+=`<div class="row"><button class="btn primary" data-act="tradefor" data-i="${i}" data-o="${o.owner}" ${ok?'':'disabled'}>🤝 Tratta con ${esc(P(o.owner).name)}</button></div>${ok?'':'<p>Ha tribune nel gruppo: prima deve smontarle.</p>'}`;
+      }
+    }
   }
   openSheet(h+`<div class="row"><button class="btn dark" data-act="close">Chiudi</button></div>`);
 }
@@ -1054,18 +1104,20 @@ function showPlayer(id){
     <div class="facts"><span class="fact">Cassa <b>${fmt(q.cash)}</b></span><span class="fact">Patrimonio <b>${fmt(netWorth(q))}</b></span><span class="fact">Diritti/giro ~<b>${fmt(rentPower(q))}</b></span></div>
     <div class="picks">${mine.map(i=>`<span class="pick ${S.own[i].mort?'mort':''}"><span class="sw" style="--g:${gcol(i)}"></span>${SQ[i].code}${S.own[i].level?' · '+LV_SHORT[S.own[i].level]:''}</span>`).join('')||'<span class="muted">Nessun circuito</span>'}</div>
     ${deals.length?`<div class="clauses"><h3>Sotto banco</h3>${deals.map(d=>`<div class="cl">${d}</div>`).join('')}</div>`:''}
-    <div class="row"><button class="btn dark" data-act="close">Chiudi</button></div>`);
+    <div class="row">${canTrade()&&!q.out&&q!==cur()?`<button class="btn primary" data-act="tradefor" data-o="${q.id}">🤝 Proponi affare</button>`:''}<button class="btn dark" data-act="close">Chiudi</button></div>`);
+}
+function ctlButtons(p,i,ctx){
+  const sq=SQ[i],o=S.own[i];let a='';
+  if(o.mort) return `<button class="btn xs primary" data-act="unmort" data-ctx="${ctx}" data-i="${i}" ${p.cash>=unmortCost(i)?'':'disabled'}>Riscatta −${unmortCost(i)}</button>`;
+  if(sq.t==='c'&&o.level<4&&ownsGroup(p,sq.g)) a+=`<button class="btn xs primary" data-act="up" data-ctx="${ctx}" data-i="${i}" ${canUpgrade(p,i)?'':'disabled'}>+${o.level===3?'GP':'Tribuna'} ${upCost(i)}</button>`;
+  if(o.level>0) a+=`<button class="btn xs dark" data-act="down" data-ctx="${ctx}" data-i="${i}">− Smonta</button>`;
+  if(canMortgage(i)) a+=`<button class="btn xs" data-act="mort" data-ctx="${ctx}" data-i="${i}">Ipoteca +${mortValue(i)}</button>`;
+  return a||'<span class="muted">Completa il gruppo per costruire</span>';
 }
 function showManage(){
   const p=cur(),mine=propsOf(p).sort((a,b)=>a-b);
   const tiles=mine.map(i=>{
-    const sq=SQ[i],o=S.own[i];let a='';
-    if(o.mort) a=`<button class="btn xs primary" data-act="unmort" data-i="${i}" ${p.cash>=unmortCost(i)?'':'disabled'}>Riscatta −${unmortCost(i)}</button>`;
-    else{
-      if(sq.t==='c'&&o.level<4&&ownsGroup(p,sq.g)) a+=`<button class="btn xs primary" data-act="up" data-i="${i}" ${canUpgrade(p,i)?'':'disabled'}>+${o.level===3?'GP':'T'} ${upCost(i)}</button>`;
-      if(o.level>0) a+=`<button class="btn xs dark" data-act="down" data-i="${i}">−</button>`;
-      if(canMortgage(i)) a+=`<button class="btn xs" data-act="mort" data-i="${i}">IPO +${mortValue(i)}</button>`;
-    }
+    const sq=SQ[i],o=S.own[i],a=ctlButtons(p,i,'manage');
     return `<div class="tile ${o.mort?'mort':''}" style="--g:${gcol(i)}"><div class="h"><b>${esc(sq.name)}</b><span>${o.mort?'IPO':(sq.t==='c'?LV_SHORT[o.level]:'')} · ${fmt(o.mort?0:rentOf(i))}</span></div><div class="a">${a}</div></div>`;
   }).join('');
   openSheet(`<h2>🏟️ I tuoi circuiti <span class="muted" style="font-size:15px;font-style:normal">${fmt(p.cash)}</span></h2>
@@ -1174,11 +1226,12 @@ const ACT={
   sound:()=>{muted=!muted;try{localStorage.setItem(MUTE_KEY,muted?'1':'0');}catch(e){}paintSound();sfx('coin');},
   fullscreen:()=>goFullscreen(),
   manage:()=>showManage(),
-  up:b=>{const i=+b.dataset.i;if(canUpgrade(cur(),i)){upgrade(i);save();render();showManage();}},
-  down:b=>{sellUpgrade(+b.dataset.i);save();render();showManage();},
-  mort:b=>{const i=+b.dataset.i;if(canMortgage(i)){mortgage(i);save();render();showManage();}},
-  unmort:b=>{unmortgage(+b.dataset.i);save();render();showManage();},
+  up:b=>{const i=+b.dataset.i;if(canUpgrade(cur(),i)){upgrade(i);after(b);}},
+  down:b=>{const i=+b.dataset.i;if(S.own[i]&&S.own[i].owner===cur().id&&S.own[i].level>0){sellUpgrade(i);after(b);}},
+  mort:b=>{const i=+b.dataset.i;if(canMortgage(i)&&S.own[i].owner===cur().id){mortgage(i);after(b);}},
+  unmort:b=>{const i=+b.dataset.i;if(S.own[i]&&S.own[i].owner===cur().id){unmortgage(i);after(b);}},
   trade:()=>startTrade(),
+  tradefor:b=>{closeSheet();startTrade({to:+b.dataset.o,get:b.dataset.i!==undefined?[+b.dataset.i]:[]});},
   'tr-to':b=>{readSelects();TR.o.to=+b.dataset.i;TR.o.get=[];TR.o.cashGet=0;paintEditor();},
   'tr-pick':b=>{readSelects();const a=TR.o[b.dataset.side],i=+b.dataset.i,k=a.indexOf(i);if(k>=0)a.splice(k,1);else a.push(i);paintEditor();},
   'tr-cash':b=>{readSelects();const o=TR.o,k=b.dataset.k,max=k==='cashGive'?P(o.from).cash:P(o.to).cash;o[k]=Math.max(0,Math.min(max,o[k]+ +b.dataset.d));paintEditor();},
@@ -1194,6 +1247,7 @@ const ACT={
   pace:b=>{syncNames();setup.fast=b.dataset.v==='true';showSetup();},
   col:b=>{syncNames();const p=setup.players[+b.dataset.i],used=setup.players.map(x=>x.color);let k=COLORS.indexOf(p.color);for(let n=0;n<6;n++){k=(k+1)%6;if(!used.includes(COLORS[k]))break;}p.color=COLORS[k];showSetup();},
 };
+function after(b){save();render();if(b.dataset.ctx==='info')showInfo(+b.dataset.i);else showManage();}
 const NO_GAME_OK=['fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info'];
 document.addEventListener('pointerdown',()=>ac(),{once:true});
 document.addEventListener('click',e=>{
