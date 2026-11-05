@@ -1,6 +1,6 @@
 # Paddock Tycoon
 
-Gioco da tavolo di compravendita a tema Formula 1, pensato per il telefono in orizzontale.
+Gioco da tavolo di compravendita a tema corse automobilistiche, pensato per il telefono in orizzontale.
 Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta gli avversari.
 
 ## Come si gioca
@@ -26,7 +26,7 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 - Monoposto dettagliate (ala con paratie, sospensioni, pance, halo, casco) animate sul tabellone, banner di turno, importi volanti, coriandoli, vibrazione e premi a fine partita.
 - La pista occupa tutto lo schermo e la plancia di gioco sta dentro il circuito.
 - Tendina **Affari** sul bordo destro; toccando un GP di un avversario puoi trattarlo subito, toccando un tuo GP lo gestisci.
-- **Campionato**: 3 o 5 gare da 8, 12 o 15 giri, con punti F1 (25-18-15-12-10-8) e ultima gara a punti doppi. Tra una gara e l'altra: ordine d'arrivo e classifica piloti.
+- **Campionato**: 3 o 5 gare da 8, 12 o 15 giri, con punti per piazzamento (25-18-15-12-10-8) e ultima gara a punti doppi. Tra una gara e l'altra: ordine d'arrivo e classifica piloti.
 - **Tutorial guidato** alla prima partita, che evidenzia passo passo le parti dello schermo; si può rivedere dal Regolamento.
 - **Tracciati veri**: toccando un circuito si vede il suo tracciato reale disegnato, con bandiera di partenza e una monoposto che gira; miniature anche all'acquisto, all'asta e su ogni casella del tabellone, colorate come il proprietario (grigie se libere, tratteggiate se ipotecate).
 - **Scuderie**: ogni pilota ha un vantaggio (💰 Sponsor d'oro, 🔧 Ingegneri, ⚖️ Avvocati, 📣 Marketing, 🪽 Aerodinamica). Si sceglie toccando l'icona nella griglia di partenza.
@@ -52,7 +52,14 @@ Sul telefono, aggiungendo il sito alla schermata Home (Android: menu → *Instal
 iPhone: Condividi → *Aggiungi alla schermata Home*) il gioco si apre a schermo intero
 e bloccato in orizzontale grazie a `manifest.webmanifest`. In verticale il gioco chiede di ruotare il telefono.
 
+## Pubblicazione
+
+- Web app installabile (manifest, icone, funzionamento offline): https://j0jofra.github.io/paddock-tycoon/
+- Privacy policy: [privacy.html](privacy.html)
+- Guida per Google Play: [docs/PUBBLICAZIONE-ANDROID.md](docs/PUBBLICAZIONE-ANDROID.md)
+- Testi e grafiche per lo store: [store/](store/)
+
 ## Crediti
 
 I tracciati sono generati dai dati open source di [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits)
-(licenza MIT, © 2019-2025 Tomislav Bacinger). Dati e gioco non sono ufficiali e non hanno legami con la Formula 1.
+(licenza MIT, © 2019-2025 Tomislav Bacinger). Paddock Tycoon è un gioco di fantasia: i nomi di circuiti, squadre ed eventi sono inventati e non hanno legami con campionati, squadre o circuiti reali.
