@@ -1,8 +1,9 @@
 # Scheda Google Play · Paddock Tycoon
 
 Testi pronti da incollare in Play Console → **Presenza nello store → Scheda dello store principale**.
-La lingua predefinita della scheda è **italiano (it-IT)**: il gioco per ora è solo in italiano.
-La versione inglese è più sotto, da aggiungere quando il gioco sarà tradotto.
+Il gioco è in **italiano e inglese** (lingua scelta in base al telefono, cambiabile dal menu).
+Lingua predefinita della scheda: italiano (it-IT). Aggiungi la traduzione **inglese (en-US)** con i testi più sotto
+e le immagini della cartella `store/en/`.
 
 ## Italiano (it-IT)
 
@@ -45,12 +46,13 @@ Sponsor d'oro, Ingegneri, Avvocati, Marketing, Aerodinamica: ogni scuderia ha un
 • CPU a tre livelli: Facile, Normale, Squalo
 • GP del weekend con diritti doppi e montepremi della Safety Car
 • Tutorial guidato, musica e effetti sonori
+• In italiano e in inglese
 • Funziona offline, nessun account, nessuna pubblicità
 
 Paddock Tycoon è un gioco di fantasia: nomi dei circuiti, squadre ed eventi sono inventati e non hanno legami con campionati, squadre o circuiti reali.
 ```
 
-## English (en-US) · da usare dopo la traduzione del gioco
+## English (en-US)
 
 **App name**
 ```
@@ -91,6 +93,7 @@ Golden Sponsor, Engineers, Lawyers, Marketing, Aero: every team plays differentl
 • Three CPU levels: Easy, Normal, Shark
 • Weekend Grand Prix with double fees and a Safety Car jackpot
 • Guided tutorial, music and sound effects
+• In English and Italian
 • Works offline, no account, no ads
 
 Paddock Tycoon is a work of fiction: circuit, team and event names are invented and not affiliated with any real championship, team or circuit.
@@ -103,6 +106,7 @@ Paddock Tycoon is a work of fiction: circuit, team and event names are invented 
 | `icon-512.png` | Icona dell'app (512×512) |
 | `feature-graphic.png` | Grafica in primo piano (1024×500) |
 | `screenshot-1.png` … `screenshot-6.png` | Screenshot del telefono (2340×1170, orizzontali) |
+| `en/feature-graphic.png`, `en/screenshot-*.png` | Le stesse immagini per la scheda in inglese |
 
 ## Altri campi
 

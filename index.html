@@ -20,7 +20,7 @@ body{margin:0}
 <title>Paddock Tycoon</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,400;0,600;0,700;0,900;1,700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Titillium+Web:ital,wght@0,400;0,600;0,700;0,900;1,700&display=swap">
 <style>
 /* Layout: telefono in orizzontale. Tabellone a sinistra alto quanto lo schermo, plancia di gioco a destra. Tema chiaro bianco e rosso, unico di proposito. */
 :root{
@@ -145,7 +145,7 @@ button{font:inherit;color:inherit}
 .ticker svg{width:16px;height:16px;flex:none}
 
 /* Fogli */
-.backdrop{position:fixed;inset:0;background:rgba(21,23,28,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.backdrop{position:fixed;inset:0;background:rgba(21,23,28,.45);z-index:35;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:640px;max-height:90%;overflow:auto;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:grid;gap:12px;animation:up .2s ease-out;box-shadow:0 -10px 40px rgba(21,23,28,.18)}
 @keyframes up{from{transform:translateY(30px);opacity:0}}
 .sheet h2{font-weight:900;font-style:italic;font-size:24px;margin:0;line-height:1.05;text-wrap:balance;display:flex;align-items:center;gap:8px}
@@ -329,6 +329,12 @@ body{overflow:hidden;box-sizing:border-box;padding-block:6px;padding-right:max(3
 .cell .ctxt{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
 .cell.side-b .ctrk,.cell.side-t .ctrk{height:52%}
 @media (max-aspect-ratio:1/1){.cell.c{flex-direction:column}.cell .ctrk{height:34%}}
+/* Logo */
+.brandlogo{display:block;height:auto;font-style:normal;font-weight:400;filter:drop-shadow(0 6px 10px rgba(21,23,28,.18))}
+.center .brand .brandlogo{width:clamp(110px,31vmin,250px)}
+.mhero2{display:grid;justify-items:center;gap:4px;text-align:center}
+.mhero2 .brandlogo{width:min(100%,clamp(240px,64vmin,460px))}
+.mhero2 .mtag{margin:0}
 /* Menu principale */
 .mmusic{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:max(14px,env(safe-area-inset-right,0px));background:var(--surface)}
 .plist{display:grid;gap:8px}
@@ -391,6 +397,17 @@ body{overflow:hidden;box-sizing:border-box;padding-block:6px;padding-right:max(3
 <div class="backdrop" id="backdrop" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 
 <script>
+// ================= Lingua =================
+const LANG_KEY='paddock-tycoon-lang';
+const LANG=(()=>{try{const v=localStorage.getItem(LANG_KEY);if(v==='it'||v==='en')return v;}catch(e){}return (navigator.language||'it').toLowerCase().startsWith('it')?'it':'en';})();
+const T=(it,en)=>LANG==='en'?en:it;
+document.documentElement.lang=LANG;
+function applyStatic(){
+  if(LANG!=='en')return;
+  const set=(sel,attr,val)=>{const e=document.querySelector(sel);if(e){if(attr)e.setAttribute(attr,val);else e.textContent=val;}};
+  set('#fsbtn','aria-label','Fullscreen');set('.ib[data-act=rules]','aria-label','Rules');set('.ib[data-act=pause]','aria-label','Pause and menu');
+  set('#tab',null,'🤝 Deals');set('.rotate h2',null,'Rotate your phone');set('.rotate .btn',null,'Play in landscape');
+}
 // ================= Dati =================
 const START_CASH=1400, LAP_BONUS=150, STOPGO_FEE=50, BRIBE=100;
 const KEY='paddock-tycoon-v4', MUTE_KEY='paddock-tycoon-muted';
@@ -428,6 +445,14 @@ const SQ=[
   C('Tempio della Velocità','TMP','g6',320,5.793,'Italia','MZA'), C('Principato','PRI','g6',380,3.337,'Principato di Monaco','MON'),
 ];
 const PIT=8;
+const NAMES_EN={'Semaforo Verde':'Green Light','Baia di Biscayne':'Biscayne Bay','Perla del Deserto':'Desert Pearl',"Tassa d'iscrizione":'Entry Fee','Oasi Rossa':'Red Oasis','Isola delle Luci':'Island of Lights','Fornitore Gomme':'Tyre Supplier','Baia di Mezzanotte':'Midnight Bay',"Loto d'Oriente":'Eastern Lotus','Otto Volante':'Figure Eight','Collina Texana':'Texas Hill','Altopiano':'High Plateau','Anello Paulista':'Paulista Ring','Fornitore Carburante':'Fuel Supplier','Foresta delle Ardenne':'Ardennes Forest','Commissari di gara':'Race Stewards','Isola del Fiume':'River Island','Valle del Danubio':'Danube Valley','Vecchio Aeroporto':'Old Airfield','Superlicenza':'Super Licence','Tempio della Velocità':'Temple of Speed','Principato':'The Principality','Zona DRS':'DRS Zone'};
+const CODES_EN={VIA:'GO',TASSA:'TAX',GOMME:'TYRES',DIR:'STW'};
+const CTRY_EN={'Stati Uniti':'United States','Bahrein':'Bahrain','Arabia Saudita':'Saudi Arabia','Emirati Arabi':'United Arab Emirates','Cina':'China','Giappone':'Japan','Messico':'Mexico','Brasile':'Brazil','Belgio':'Belgium','Ungheria':'Hungary','Regno Unito':'United Kingdom','Italia':'Italy','Principato di Monaco':'Monaco'};
+const GROUPS_EN={g1:'New Horizons',g2:'Desert',g3:'Far East',g4:'Americas',g5:'Classics',g6:'Legends'};
+if(LANG==='en'){
+  SQ.forEach(s=>{if(NAMES_EN[s.name])s.name=NAMES_EN[s.name];if(CODES_EN[s.code])s.code=CODES_EN[s.code];if(s.country&&CTRY_EN[s.country])s.country=CTRY_EN[s.country];});
+  for(const k in G)G[k].n=GROUPS_EN[k];
+}
 // Tracciati: coordinate da github.com/bacinger/f1-circuits (MIT, © Tomislav Bacinger), dati non ufficiali, normalizzati a 100 unità.
 const TRACKS={"MIA":{"w":100.0,"h":39.8,"d":"M49.4 11.1 63.0 19.6 63.2 20.3 63.1 20.8 62.7 21.6 59.8 23.8 58.9 24.8 58.6 26.5 58.9 28.4 58.6 30.7 57.9 32.2 55.3 34.3 52.3 35.3 50.3 35.7 47.5 35.8 45.2 35.4 42.6 34.2 29.2 26.2 27.2 25.0 26.3 24.8 25.1 24.8 24.0 24.9 22.6 25.4 21.3 26.0 20.1 27.0 18.8 27.9 17.1 28.2 15.6 28.0 14.0 27.2 12.4 25.9 11.0 24.5 9.4 23.7 7.8 23.4 5.9 23.7 4.1 24.3 2.6 25.0 1.5 26.0 0.4 27.7 0.0 29.4 0.0 30.9 0.4 31.9 0.9 32.6 2.0 33.2 3.3 33.2 5.0 32.8 6.8 32.8 10.6 33.6 17.5 35.0 24.6 34.8 35.5 34.4 38.6 35.3 42.3 36.7 45.3 37.7 49.3 39.0 53.5 39.7 57.7 39.8 62.2 39.0 66.2 37.6 75.4 34.2 80.8 32.2 83.4 31.1 90.0 27.5 93.5 25.3 94.3 24.3 94.0 23.5 93.4 22.9 91.7 21.9 90.6 21.0 90.0 19.8 89.9 18.5 90.2 16.9 91.1 16.0 92.1 15.6 95.2 15.8 96.7 15.6 97.4 15.2 98.4 14.2 100.0 11.3 99.9 10.7 99.1 10.4 98.4 9.9 98.4 8.8 99.7 4.7 99.6 4.0 99.0 3.6 95.8 3.3 49.8 1.7 13.2 0.0 12.1 0.3 11.9 1.1 12.3 2.2 13.5 3.3 15.5 4.8 17.6 5.9 19.4 6.4 20.9 6.3 22.8 5.6 27.1 3.5 29.5 2.9 32.5 2.6 35.5 3.0 38.3 4.2 49.4 11.1Z"},"LVG":{"w":60.0,"h":100.0,"d":"M54.9 88.8 57.8 85.6 58.4 85.0 58.8 84.2 58.9 83.4 58.6 82.6 58.0 82.1 56.9 81.7 55.9 81.5 54.9 81.6 54.0 81.9 52.0 83.1 50.2 84.9 49.4 85.4 47.9 85.7 47.0 85.7 45.5 85.2 44.7 84.7 43.9 84.1 42.6 82.3 42.1 80.8 41.7 36.9 42.0 36.3 42.5 35.9 51.6 36.1 54.3 36.1 55.7 35.8 56.3 35.3 57.9 33.7 58.6 32.7 59.2 31.6 59.6 30.6 59.8 29.4 60.0 27.9 59.9 27.0 59.4 26.7 58.1 26.6 57.7 26.3 57.3 25.7 57.1 24.7 57.2 24.0 58.4 21.8 58.7 21.2 59.2 20.2 59.0 19.2 58.0 18.5 56.1 18.3 41.7 17.9 36.4 17.1 34.6 16.3 32.7 14.3 31.1 11.0 28.5 5.0 26.9 3.3 25.2 2.1 23.5 1.5 20.8 0.6 17.7 0.0 17.3 0.1 16.9 0.4 16.6 1.5 16.3 2.2 13.1 8.4 11.1 12.0 10.1 13.9 9.0 15.7 7.2 18.9 5.4 23.1 4.4 26.3 3.3 30.0 2.6 32.7 2.0 35.3 1.6 38.0 1.1 41.9 1.0 44.2 0.9 46.9 0.9 54.3 0.9 58.5 1.0 61.7 0.4 78.3 0.2 86.9 0.2 91.2 0.0 96.3 0.3 96.7 0.7 96.9 1.6 96.8 2.3 97.1 3.9 98.7 5.3 99.5 7.1 99.8 15.0 100.0 25.4 99.9 34.0 99.9 38.2 99.9 41.6 99.4 45.2 98.7 46.1 98.3 46.9 97.8 47.5 97.2 54.9 88.8Z"},"LUS":{"w":84.7,"h":100.0,"d":"M14.9 60.5 4.4 41.3 0.3 33.9 0.0 32.5 0.2 31.1 0.7 29.9 1.5 29.1 2.8 28.4 4.2 28.1 5.6 28.4 16.1 34.7 17.1 35.0 18.4 35.1 19.9 34.6 21.1 33.5 21.8 32.2 22.0 31.0 21.8 21.8 21.9 20.6 22.3 19.5 22.8 18.5 23.5 17.7 38.4 1.1 39.2 0.5 40.5 0.1 41.7 0.0 43.0 0.3 43.9 0.9 48.4 5.1 48.9 6.0 49.1 7.3 49.1 8.3 48.8 9.4 48.1 10.3 38.4 21.0 38.0 21.7 38.0 22.6 38.2 23.3 38.7 23.9 39.4 24.3 40.3 24.4 41.0 24.2 41.9 23.8 58.8 17.1 59.9 17.0 61.3 17.1 62.4 17.7 63.3 18.6 63.9 19.7 64.1 20.8 64.1 21.8 63.8 22.8 63.1 23.9 62.5 24.4 61.2 25.5 59.7 27.2 58.5 28.9 57.5 30.7 56.6 32.8 56.2 34.3 55.7 36.8 55.2 37.9 54.5 38.8 53.7 39.4 52.7 39.8 43.1 42.2 42.2 42.7 41.6 43.3 41.2 44.2 41.1 45.1 41.2 46.5 42.3 47.9 44.1 49.7 46.8 51.8 49.7 53.4 52.7 54.5 55.6 55.1 58.5 55.4 61.6 55.1 76.0 53.5 77.3 53.7 78.8 54.5 80.0 55.4 81.1 56.9 84.4 63.1 84.7 64.1 84.7 65.1 84.6 66.1 83.9 67.4 78.7 75.8 78.0 76.4 77.1 76.8 76.1 77.1 74.7 77.1 58.2 73.7 57.0 73.7 55.8 74.1 54.8 74.8 54.1 75.6 42.6 98.0 41.7 99.1 40.7 99.8 39.1 100.0 38.0 99.9 36.9 99.4 35.7 98.4 14.9 60.5Z"},"BHR":{"w":67.5,"h":100.0,"d":"M2.2 47.4 3.0 19.3 3.7 1.0 4.0 0.1 4.8 0.0 5.6 0.2 6.2 0.6 10.0 4.5 11.0 4.9 12.1 4.8 18.7 2.7 20.3 2.5 21.7 2.6 65.0 11.0 66.5 11.4 67.3 12.2 67.5 13.3 67.3 14.3 66.8 15.4 65.9 16.5 64.8 17.5 63.3 18.6 58.1 22.5 53.9 26.8 52.9 27.8 52.1 29.3 50.2 33.5 49.5 34.4 48.6 35.1 47.6 35.6 46.0 35.8 41.3 35.0 40.0 35.0 38.7 35.3 37.6 35.9 36.3 37.1 26.6 49.3 25.7 50.1 24.4 50.3 23.5 49.7 23.2 48.4 23.3 46.4 25.6 32.6 26.9 23.9 27.1 22.2 26.9 20.6 26.6 19.5 25.9 18.3 21.9 14.9 21.4 14.6 20.8 14.8 20.4 15.4 19.0 26.1 18.6 33.2 17.9 46.0 17.4 59.3 16.9 71.5 17.1 73.5 17.9 74.7 19.2 75.3 20.9 75.7 22.7 75.6 24.9 75.1 27.1 74.0 29.1 72.7 30.9 70.8 32.1 68.9 34.2 63.4 35.4 61.1 36.5 59.7 38.0 58.5 39.7 57.4 42.2 56.8 44.9 56.7 46.8 57.2 49.4 58.4 56.1 61.8 57.5 62.8 58.7 63.9 59.3 65.0 60.0 66.3 60.0 67.3 59.4 68.5 58.3 69.6 56.6 70.8 5.5 99.5 4.6 100.0 3.1 100.0 2.5 99.4 0.2 94.6 0.0 92.7 0.0 89.0 0.7 69.2 2.2 47.4Z"},"JED":{"w":21.4,"h":100.0,"d":"M15.8 77.0 10.7 62.1 10.4 61.8 10.2 61.8 9.0 62.2 8.7 62.1 8.4 61.9 8.2 61.6 8.1 61.2 8.3 60.1 9.1 57.4 9.2 57.0 9.3 56.2 8.9 54.1 7.8 47.4 7.7 46.0 7.4 45.6 6.2 45.1 5.7 44.8 5.2 44.4 4.7 43.4 4.3 42.5 4.3 41.3 4.4 40.4 4.7 39.9 5.5 38.7 5.8 38.0 5.9 37.3 5.9 36.2 5.4 34.4 4.9 33.6 4.6 33.3 3.8 32.8 3.4 32.5 3.1 32.1 2.9 31.3 3.0 27.8 3.1 27.0 3.8 26.1 4.4 25.7 5.8 25.2 6.3 24.9 6.7 24.2 7.0 22.6 7.2 21.4 7.8 19.6 8.2 18.5 8.5 16.7 8.6 15.5 8.5 14.1 8.4 8.7 7.9 1.7 7.8 1.2 7.4 0.6 6.9 0.3 6.1 0.0 5.3 0.1 4.7 0.4 4.2 0.8 3.7 1.6 3.5 2.8 3.6 3.8 3.8 4.7 5.0 6.7 5.6 7.7 6.2 9.2 6.4 10.1 6.5 11.4 6.5 12.3 6.3 13.5 5.9 14.7 5.5 15.7 4.9 16.9 4.3 18.1 4.1 19.4 4.1 20.3 4.1 21.0 3.9 21.5 3.5 21.9 2.9 22.2 1.7 22.6 0.8 23.4 0.4 24.0 0.3 24.6 0.1 25.7 0.0 27.0 0.0 27.9 0.1 28.9 0.2 29.9 0.7 31.3 1.8 33.7 2.6 35.5 3.0 37.1 3.1 38.5 3.1 39.9 3.0 40.7 3.0 42.5 3.1 43.0 3.2 43.8 3.7 45.3 4.1 46.2 4.7 47.2 5.7 48.7 6.3 49.8 6.8 51.1 7.3 52.9 7.5 54.3 7.6 55.8 7.5 57.2 7.4 58.5 7.1 60.2 6.9 60.8 6.7 61.3 6.7 61.8 6.9 62.3 7.3 62.9 7.7 63.2 8.6 64.0 9.1 64.6 9.5 65.4 10.1 68.3 10.1 69.1 9.9 69.9 9.2 71.1 7.2 75.1 6.7 76.3 6.3 77.7 6.2 78.7 6.1 79.6 6.3 81.7 6.8 83.7 7.2 85.0 7.5 86.2 8.0 87.7 8.7 89.3 9.7 91.2 10.4 92.2 11.3 93.4 12.6 94.9 14.3 96.3 15.8 97.4 19.0 99.6 19.9 100.0 20.5 99.8 21.0 99.5 21.4 98.9 21.3 98.3 20.5 94.5 18.9 86.7 18.0 83.7 17.2 81.2 15.8 77.0Z"},"ABU":{"w":46.9,"h":100.0,"d":"M22.9 56.0 36.8 54.1 37.5 53.9 38.1 53.3 38.5 52.5 38.5 51.7 38.3 50.9 36.1 41.4 35.7 40.4 35.2 39.7 34.3 38.9 33.6 38.6 29.7 37.3 28.3 36.7 27.4 36.0 26.5 35.2 25.8 34.4 25.3 33.7 24.7 32.3 24.5 31.2 24.5 30.0 24.7 28.6 25.2 27.1 26.2 23.4 26.5 20.6 26.5 18.6 26.4 16.9 25.3 8.1 24.6 2.5 24.4 1.8 24.3 1.3 23.9 0.8 23.2 0.2 22.7 0.1 22.2 0.0 21.8 0.1 21.3 0.3 20.9 0.7 20.7 1.0 20.4 1.6 19.5 4.2 18.7 7.9 11.7 28.6 9.0 36.7 7.5 41.1 6.4 44.6 5.2 48.9 2.7 56.9 0.3 64.0 0.1 64.7 0.0 65.2 0.1 65.6 0.3 65.9 0.9 65.9 3.1 65.6 3.6 65.6 4.0 66.1 5.3 70.9 5.5 71.8 6.3 73.7 7.1 75.2 8.6 77.4 10.4 79.5 12.6 81.4 22.1 88.9 24.2 90.6 25.9 91.8 28.2 93.3 30.2 94.4 33.3 95.9 36.2 97.2 40.4 99.3 42.3 100.0 43.3 100.0 44.4 99.8 45.4 99.2 45.9 98.7 46.3 98.2 46.6 97.4 46.8 96.7 46.9 96.1 46.8 94.9 46.6 94.1 46.3 93.4 45.8 92.7 45.2 92.0 44.4 91.5 43.5 91.1 42.2 90.9 32.3 90.1 31.0 90.0 30.5 89.8 30.0 89.6 24.6 86.3 24.1 85.9 23.7 85.4 23.3 84.4 22.1 78.6 22.2 78.1 22.4 77.8 22.9 77.7 27.3 77.0 27.8 76.8 28.2 76.6 28.5 76.3 28.9 75.6 29.0 74.8 29.0 70.8 28.7 70.1 28.3 69.7 27.6 69.4 26.8 69.3 26.1 69.2 25.1 69.1 24.2 69.2 14.9 70.6 14.1 70.7 13.1 70.6 12.1 70.5 11.4 70.2 11.0 69.8 10.5 69.3 8.0 64.7 6.6 62.6 6.4 61.9 6.2 61.1 6.1 60.4 6.1 59.6 6.2 59.0 6.6 58.6 7.0 58.3 8.0 58.2 22.9 56.0Z"},"SIN":{"w":100.0,"h":64.8,"d":"M97.8 24.7 99.8 39.9 100.0 41.8 99.8 42.8 99.3 43.7 96.8 47.4 96.4 48.0 95.9 48.3 95.3 48.3 94.0 48.3 87.7 47.9 78.1 46.9 76.9 46.6 76.1 46.1 75.5 45.4 75.0 44.1 74.9 42.8 74.9 42.0 74.7 41.6 73.4 41.5 72.0 41.5 64.9 41.1 44.9 40.0 42.5 39.7 40.8 39.3 39.0 38.4 31.9 32.2 28.9 29.6 28.4 29.2 27.7 29.1 26.8 29.2 26.1 29.7 25.6 30.1 24.4 34.0 23.7 37.0 22.0 45.8 18.5 63.6 18.3 64.0 18.1 64.3 17.6 64.7 17.0 64.8 16.3 64.8 16.0 64.7 15.1 63.6 14.3 62.5 13.7 61.1 13.1 60.5 10.0 58.0 8.5 56.6 7.5 55.7 6.9 54.9 6.3 52.8 6.4 51.9 6.6 51.2 7.0 50.3 6.8 49.8 6.0 49.5 4.6 49.0 3.3 48.3 1.8 47.2 0.7 46.2 0.2 45.3 0.0 44.1 0.0 43.0 1.2 41.0 5.9 32.5 12.1 21.5 13.2 19.5 14.2 18.5 14.6 18.2 16.0 17.9 17.2 18.7 18.8 19.8 25.2 26.5 25.8 26.8 26.3 26.7 26.7 25.8 29.3 20.9 32.7 15.1 33.3 14.2 33.9 14.0 35.0 14.5 35.6 14.8 53.6 25.3 56.6 26.4 58.6 26.8 84.0 28.3 85.0 28.1 86.3 27.5 87.4 26.8 88.1 25.5 88.2 24.3 88.0 21.5 87.3 17.8 85.1 11.6 84.5 10.3 84.1 9.2 83.9 7.9 83.9 6.2 84.2 2.4 84.9 1.0 85.8 0.1 86.5 0.0 87.2 0.2 87.9 1.0 88.3 1.6 88.7 2.1 89.4 2.7 91.0 3.5 92.4 3.9 94.1 3.7 95.0 4.1 95.4 4.7 95.7 5.7 96.3 14.0 97.8 24.7Z"},"SHA":{"w":100.0,"h":87.7,"d":"M26.5 78.5 19.0 80.4 17.6 80.5 16.0 80.5 14.5 80.1 13.5 79.6 12.2 78.8 11.2 77.9 10.5 76.9 9.9 75.8 9.5 74.6 9.4 73.4 9.5 72.0 9.6 70.9 10.0 69.9 10.6 69.0 11.4 68.2 13.2 67.4 14.9 67.4 16.2 67.9 16.8 68.5 17.2 69.1 17.2 70.0 16.9 71.3 16.4 73.3 16.2 74.1 16.6 74.9 17.3 75.7 18.7 76.2 20.1 75.9 20.9 75.4 21.4 74.6 21.9 73.7 22.3 72.6 22.6 71.3 22.7 69.8 22.5 68.6 21.7 67.2 21.2 66.4 19.7 64.5 15.7 60.2 12.6 56.1 10.0 53.4 6.8 49.7 5.8 48.0 5.3 46.8 2.0 37.1 1.0 34.1 0.0 31.3 0.0 30.5 0.4 29.9 1.2 29.6 2.7 29.9 4.1 30.8 5.4 31.9 6.6 33.2 8.4 35.0 9.9 37.2 12.5 41.9 16.1 48.2 17.3 49.9 18.4 51.3 19.7 52.5 21.2 53.4 22.8 54.0 24.5 54.3 26.4 54.3 28.1 54.0 29.7 53.4 31.4 52.3 33.0 51.0 34.2 49.6 35.5 46.7 37.6 42.4 38.5 41.0 39.4 40.1 40.5 39.5 42.2 38.7 43.8 38.6 45.2 38.7 46.4 39.2 47.5 39.9 48.3 40.6 49.0 41.3 52.4 47.9 53.2 48.8 54.2 49.1 55.2 49.0 56.1 48.6 59.5 44.1 59.9 43.2 59.9 42.4 59.7 41.6 51.4 27.5 46.2 19.1 40.5 9.7 39.7 9.4 38.9 9.6 38.2 10.3 37.3 11.2 36.5 12.3 35.7 12.8 34.7 13.1 33.7 12.9 32.7 12.0 31.5 10.7 30.9 9.6 30.6 8.6 30.4 7.2 30.5 5.9 30.7 4.6 31.1 3.4 32.2 1.9 33.3 1.1 34.7 0.5 36.3 0.1 37.5 0.0 39.1 0.1 41.0 0.6 42.3 1.1 43.6 1.8 45.5 3.5 47.1 5.8 64.5 32.5 75.4 49.0 81.0 57.5 86.0 65.3 92.6 75.1 99.6 85.3 100.0 86.2 100.0 87.1 99.4 87.7 98.4 87.6 96.4 86.7 95.3 85.8 94.0 84.9 80.5 66.5 79.9 66.2 78.8 66.1 62.0 70.1 26.5 78.5Z"},"SUZ":{"w":100.0,"h":53.4,"d":"M85.4 28.5 91.6 35.9 98.8 44.8 99.4 45.7 99.8 46.7 100.0 47.6 100.0 48.4 99.9 49.1 99.0 51.7 98.6 52.4 98.1 52.9 97.6 53.2 96.7 53.4 95.9 53.4 95.0 53.1 94.2 52.4 93.4 51.2 89.1 44.6 88.3 43.9 87.6 43.7 86.6 43.5 84.4 43.5 83.2 43.2 82.5 42.7 81.9 41.9 81.6 41.2 80.6 37.5 80.2 36.5 79.5 35.7 78.8 35.1 77.8 34.7 76.8 34.5 74.2 34.4 73.1 34.2 72.3 33.8 71.4 33.2 70.8 32.3 70.4 31.4 70.3 30.5 70.3 29.7 70.4 29.0 71.7 25.5 71.9 24.8 71.9 23.9 71.8 23.3 71.4 22.4 70.9 21.7 70.0 21.0 68.8 20.4 67.5 19.7 66.3 19.2 65.4 19.0 64.1 18.8 62.7 18.7 61.6 18.8 60.7 19.0 59.9 19.3 58.7 19.9 57.5 20.5 56.0 21.7 54.9 22.9 50.2 28.6 50.0 28.9 49.2 29.1 42.4 29.7 41.9 29.7 41.5 29.3 41.3 28.8 41.2 28.3 40.2 24.1 38.8 16.0 38.5 14.5 38.4 13.8 38.5 13.0 38.7 12.2 39.0 11.4 39.3 10.6 40.4 8.0 40.6 7.6 40.5 7.3 40.3 7.0 39.9 6.7 39.5 6.6 39.1 6.6 38.6 6.9 38.3 7.5 36.6 10.2 35.3 12.3 34.5 13.6 33.8 14.4 33.2 14.9 32.1 15.8 31.0 16.4 29.9 16.7 27.8 17.0 25.9 17.1 24.5 17.0 22.8 16.6 20.9 16.1 18.8 15.3 17.5 14.7 16.4 14.0 15.3 13.2 14.2 12.2 13.0 10.9 12.2 9.7 11.5 8.5 9.8 3.9 8.9 2.0 8.4 1.2 7.8 0.6 7.0 0.2 6.0 0.0 4.8 0.0 3.7 0.2 2.6 0.4 1.6 0.9 0.7 1.5 0.2 2.3 0.0 3.1 0.1 4.2 0.3 4.9 0.6 5.7 1.2 6.3 2.4 7.4 3.8 8.6 5.2 9.8 7.0 11.2 9.0 12.6 11.1 13.9 13.4 15.0 15.5 16.1 17.7 16.9 21.1 18.1 25.0 19.6 29.6 21.2 34.2 22.6 37.4 23.7 41.5 25.3 42.4 25.5 43.3 25.6 44.3 25.4 45.3 25.1 47.0 24.4 48.6 23.7 50.0 22.8 51.4 21.7 53.9 19.3 57.5 16.0 58.5 15.2 59.2 14.7 59.8 14.3 60.3 14.0 60.5 14.0 60.9 14.1 61.7 14.8 62.2 15.3 62.7 15.4 63.1 15.4 63.7 15.0 64.5 14.2 65.5 13.5 66.6 13.1 67.9 13.0 69.1 13.0 70.4 13.3 71.7 13.8 72.8 14.3 74.2 15.3 75.4 16.4 76.7 17.9 85.4 28.5Z"},"COA":{"w":100.0,"h":57.3,"d":"M20.1 46.8 29.1 54.0 31.6 55.7 33.5 56.9 34.2 57.2 34.5 57.3 34.8 57.3 35.1 57.1 35.3 56.8 35.4 56.6 35.3 56.2 33.4 50.6 32.5 48.0 32.4 47.2 32.3 46.5 32.4 45.7 32.5 44.9 32.8 44.0 33.2 43.2 33.7 42.5 34.3 41.7 35.1 41.2 36.0 40.6 41.3 37.3 43.4 36.0 43.9 35.5 44.3 35.0 44.7 34.5 44.9 33.9 45.2 33.4 45.7 31.8 46.1 31.3 46.6 30.7 47.2 30.3 47.7 30.0 48.9 29.5 49.9 29.0 50.4 28.6 50.8 28.2 51.1 27.6 51.2 26.9 51.4 25.7 51.5 25.0 51.7 24.1 51.9 23.5 52.3 23.0 52.7 22.4 53.1 21.9 53.8 21.3 54.5 20.8 55.3 20.3 56.2 19.9 56.9 19.8 57.6 19.7 58.1 19.8 58.9 20.0 64.0 22.4 64.5 22.6 65.1 22.6 65.5 22.4 66.5 21.8 67.7 20.8 68.6 19.9 69.5 18.7 70.1 18.0 70.7 17.5 71.3 17.2 71.8 17.1 72.6 17.1 73.4 17.3 74.0 17.7 74.5 18.2 74.8 18.5 75.1 18.9 75.3 19.4 75.7 19.8 76.1 20.0 76.5 20.0 85.9 17.9 86.5 17.7 86.8 17.5 87.1 17.3 92.6 10.6 97.4 4.8 99.2 2.5 99.9 1.1 100.0 0.8 99.9 0.5 99.7 0.3 99.4 0.1 99.1 0.0 98.8 0.0 98.3 0.1 88.3 3.3 81.4 5.3 73.7 7.1 64.6 9.0 58.8 9.9 53.5 10.7 37.9 12.4 36.2 12.7 36.0 12.9 35.9 13.2 35.9 13.4 36.1 13.7 37.2 14.9 40.7 19.7 42.3 22.3 42.4 22.6 42.3 23.2 42.0 23.5 41.6 23.8 41.3 23.9 40.6 24.0 37.7 23.8 37.5 23.6 37.2 23.4 37.0 23.1 36.7 22.7 36.2 21.1 35.9 20.5 35.5 19.9 33.6 18.0 33.3 17.7 33.0 17.6 32.6 17.5 30.8 17.4 30.4 17.4 30.2 17.5 30.0 17.8 29.9 18.1 30.0 18.5 33.6 24.8 35.1 27.5 35.2 28.2 35.2 29.0 35.0 29.6 34.9 30.2 34.5 31.3 33.9 32.5 33.5 33.0 32.9 33.5 32.2 33.8 29.2 35.2 28.7 35.3 28.1 35.4 27.0 35.3 25.9 35.1 24.9 34.8 23.9 34.4 22.9 33.8 22.2 33.3 21.8 32.6 18.4 27.8 15.8 24.5 15.4 24.1 15.0 24.0 14.5 23.9 14.0 23.9 13.4 24.1 12.6 24.3 11.9 24.6 1.0 29.4 0.4 29.8 0.1 30.2 0.0 30.6 0.1 30.9 0.4 31.2 0.7 31.5 6.4 36.1 20.1 46.8Z"},"MEX":{"w":100.0,"h":72.2,"d":"M18.3 1.4 43.1 4.9 51.1 5.9 59.6 6.7 63.7 7.2 74.2 8.7 92.6 11.4 96.4 12.2 97.0 12.4 97.4 12.7 97.5 13.2 97.6 13.6 96.9 18.2 97.0 18.6 97.2 18.9 99.1 20.0 99.7 20.3 100.0 20.7 100.0 21.2 99.6 24.0 99.0 26.6 98.1 29.0 97.0 31.2 88.6 45.6 78.4 61.4 77.8 62.5 77.7 63.2 77.8 63.7 78.1 64.1 81.2 66.0 81.5 66.3 81.5 66.7 81.3 67.1 80.8 67.6 75.1 71.9 74.6 72.1 74.1 72.2 73.7 72.0 72.6 71.4 72.5 71.0 72.5 70.1 75.0 50.0 75.0 49.3 74.7 48.8 74.4 48.3 73.8 47.9 70.7 46.0 69.7 45.0 69.0 44.4 68.4 43.1 67.7 41.3 67.0 40.2 66.2 39.5 65.4 38.9 64.2 38.4 54.9 37.0 53.9 36.7 53.2 36.1 52.9 35.7 52.7 35.2 51.5 31.5 51.1 30.8 50.5 30.1 49.0 29.2 42.1 25.5 40.1 24.6 37.2 23.9 14.2 20.6 13.7 20.4 13.4 20.1 13.2 19.7 13.2 19.0 12.8 13.1 12.3 9.0 12.1 8.5 11.8 8.2 11.3 8.0 10.7 8.1 10.1 8.6 9.2 9.9 8.8 10.2 8.2 10.5 7.6 10.4 6.8 10.1 6.0 9.7 5.2 9.4 1.3 9.0 0.6 8.8 0.3 8.5 0.0 8.1 0.0 7.6 0.3 6.5 0.8 5.0 1.5 3.7 2.6 2.3 3.9 1.2 5.5 0.4 6.9 0.0 8.3 0.0 10.4 0.3 18.3 1.4Z"},"INT":{"w":63.2,"h":100.0,"d":"M6.1 71.8 11.7 93.4 12.3 95.7 12.9 97.0 14.3 99.0 14.9 99.6 15.9 100.0 16.9 100.0 18.0 99.8 18.6 99.5 20.3 97.9 22.0 96.0 22.7 95.5 23.5 95.2 24.4 95.1 25.7 95.5 28.4 97.2 30.6 98.1 32.2 98.5 33.7 98.7 35.0 98.8 37.0 98.5 38.5 98.2 40.3 97.5 42.1 96.5 43.8 95.2 45.2 93.7 46.3 92.2 47.1 90.7 47.8 89.1 50.4 80.3 51.6 75.8 53.5 68.4 55.8 58.8 60.0 43.1 61.5 37.4 62.5 33.5 63.0 31.6 63.2 30.5 63.1 29.4 62.8 28.6 62.2 27.8 61.1 27.0 59.9 26.5 58.1 26.1 52.7 25.1 50.6 24.8 49.3 24.9 47.7 25.1 46.2 25.6 44.9 26.4 43.6 27.1 42.4 28.2 41.1 29.5 39.5 31.6 34.0 39.0 30.8 43.5 28.1 47.4 25.1 51.3 23.5 53.5 22.3 55.2 21.5 56.1 20.5 56.7 19.2 57.2 17.7 57.4 15.5 57.3 14.0 57.1 12.8 56.7 11.8 56.2 10.0 55.2 9.1 54.4 8.5 53.6 7.9 52.5 7.5 51.0 6.9 48.7 6.5 46.6 5.9 42.8 5.8 41.2 5.8 39.6 6.2 38.4 6.8 37.8 7.2 37.6 7.8 37.4 8.5 37.3 9.3 37.5 10.1 37.8 12.2 39.5 13.1 40.0 13.8 40.3 14.5 40.4 15.2 40.5 15.9 40.4 16.9 40.0 18.1 39.0 18.8 38.0 19.2 36.9 19.2 36.0 19.1 34.9 18.7 34.1 17.7 32.7 16.9 31.8 13.9 28.9 12.4 27.2 11.3 25.6 10.5 23.5 10.0 20.9 9.7 19.3 9.5 17.9 9.6 16.7 10.1 15.9 10.5 15.4 11.1 15.2 11.6 15.1 12.2 15.2 13.0 15.5 16.6 19.7 19.8 23.2 20.3 23.6 21.5 24.4 22.6 24.9 23.5 25.2 24.6 25.3 25.6 25.5 26.8 25.5 28.6 25.2 30.0 24.8 31.5 23.9 33.0 22.7 33.9 21.5 34.8 20.3 37.2 16.5 39.9 12.0 42.9 7.1 43.1 6.5 43.1 5.9 43.0 5.2 42.6 4.5 41.9 3.9 40.4 3.0 38.1 2.2 33.4 0.4 32.5 0.2 31.3 0.0 28.9 0.3 26.9 0.6 22.4 1.6 20.9 2.1 17.9 3.3 16.4 4.0 12.9 5.9 11.6 6.8 10.4 7.9 9.2 9.0 8.2 10.1 7.3 11.5 6.5 13.2 5.9 15.1 4.9 18.8 3.8 23.6 3.0 28.0 1.8 32.8 1.0 36.4 0.3 38.9 0.0 40.7 0.0 43.1 0.1 46.0 0.5 48.2 1.0 50.7 1.9 54.4 4.7 66.0 6.1 71.8Z"},"SPA":{"w":61.7,"h":100.0,"d":"M18.6 10.6 13.1 1.0 13.1 0.6 13.3 0.2 13.8 0.0 14.4 0.2 16.2 1.1 20.6 3.2 22.7 4.5 24.9 6.1 26.9 7.8 28.4 9.5 36.8 19.5 37.4 20.0 38.4 20.7 40.2 21.8 41.0 22.6 41.7 23.7 42.1 24.7 42.4 25.8 42.7 27.8 42.8 28.5 43.1 29.1 43.5 30.0 47.7 36.6 50.3 40.9 51.0 42.4 51.5 43.6 52.1 45.5 55.4 57.1 60.5 74.6 61.6 78.8 61.7 79.5 61.6 80.3 61.2 80.9 60.6 81.4 59.8 81.8 59.4 82.3 59.1 82.8 58.8 83.5 58.9 84.3 59.9 88.8 59.9 89.6 59.7 90.3 59.2 91.1 58.5 91.7 46.9 99.7 46.2 100.0 45.5 100.0 44.7 99.8 44.0 99.3 43.6 98.7 43.4 98.0 43.4 97.3 43.6 96.6 44.0 95.9 44.6 95.5 49.7 92.3 50.2 91.8 50.5 91.2 50.6 90.5 50.6 89.7 48.5 83.6 47.8 81.1 46.3 73.3 45.6 68.9 45.5 68.1 45.1 67.3 44.6 66.6 43.9 65.9 43.1 65.4 42.2 65.0 41.2 64.9 38.2 64.7 37.0 64.8 36.0 65.1 34.9 65.5 34.0 66.1 33.0 67.1 32.4 68.0 31.6 69.4 28.8 76.5 26.2 82.9 25.7 83.9 25.0 84.6 24.1 85.1 23.2 85.4 22.4 85.4 21.6 85.2 20.8 84.9 19.7 84.1 18.9 83.8 18.0 83.6 17.0 83.7 16.2 84.0 15.4 84.5 15.0 85.1 14.4 85.9 9.7 93.3 9.2 93.7 8.7 94.0 8.0 94.2 7.2 94.1 6.5 93.8 3.4 91.5 1.5 90.1 1.0 89.5 0.5 88.8 0.2 88.1 0.0 87.2 0.0 86.3 0.1 85.3 0.5 84.4 0.9 83.3 1.5 81.5 2.6 79.6 3.8 77.9 5.7 75.8 8.7 72.8 10.5 71.4 12.0 70.6 19.9 66.5 21.0 65.8 22.1 64.9 23.1 64.0 23.9 63.0 24.7 61.9 25.8 59.9 26.6 58.1 28.6 53.7 28.9 52.8 29.1 51.7 29.2 50.5 29.0 49.3 27.8 46.4 26.6 43.1 25.0 39.0 24.6 37.5 24.3 35.6 24.1 34.0 23.9 32.5 23.5 26.0 23.5 25.5 23.8 25.2 24.2 25.1 24.9 25.2 25.6 25.2 26.1 25.1 26.4 24.8 26.5 24.4 26.3 23.8 23.8 19.7 18.6 10.6Z"},"MTL":{"w":32.5,"h":100.0,"d":"M27.2 72.4 28.4 78.1 29.4 82.3 29.9 85.5 29.9 88.0 29.1 94.9 29.3 95.7 29.8 96.3 31.9 97.2 32.3 97.5 32.5 98.1 32.4 98.7 32.1 99.3 31.6 99.7 30.9 100.0 30.0 100.0 29.0 99.8 26.5 99.1 24.9 98.5 23.3 97.7 21.9 96.7 18.4 93.8 16.4 91.8 16.0 91.3 15.9 90.8 15.9 90.3 16.3 89.2 16.4 88.5 16.3 87.9 16.1 87.5 12.2 82.7 11.5 82.1 10.1 81.2 9.3 80.5 8.5 79.4 8.0 78.1 7.7 76.9 7.5 75.9 7.6 68.4 7.6 67.8 7.3 67.3 6.8 66.9 6.0 66.7 4.8 67.0 4.2 67.0 3.4 66.8 2.7 66.4 2.2 65.9 1.8 65.4 1.5 64.8 1.2 63.8 0.9 62.5 0.5 60.9 0.5 59.6 0.0 53.9 0.0 50.8 0.1 48.3 0.3 45.6 0.6 43.4 0.9 41.7 2.9 33.6 3.3 32.8 3.8 32.5 4.3 32.4 5.0 32.3 5.6 32.2 6.1 31.8 6.7 31.2 7.2 30.5 7.6 29.5 9.6 21.3 10.4 16.9 10.7 13.8 10.8 10.7 10.8 9.6 10.6 8.5 9.2 1.3 9.1 0.9 9.2 0.5 9.5 0.1 10.2 0.0 10.6 0.1 10.9 0.5 10.9 0.7 11.1 2.3 11.4 4.8 11.5 5.6 11.8 6.5 12.8 8.7 13.8 10.6 18.5 22.9 19.1 24.4 26.1 58.1 26.4 59.5 26.3 59.9 26.0 60.3 25.4 60.5 25.1 60.9 24.9 61.3 25.0 61.8 26.2 67.6 27.2 72.4Z"},"HUN":{"w":88.4,"h":100.0,"d":"M22.0 75.3 5.6 62.2 0.7 58.4 0.3 57.6 0.0 56.9 0.1 56.1 0.4 55.4 0.9 55.0 1.5 54.7 2.4 54.6 3.8 54.6 7.5 54.6 10.1 55.1 12.4 55.8 14.8 56.7 16.6 57.8 18.0 58.7 31.5 69.3 32.4 69.9 33.4 70.1 34.3 70.1 35.1 69.8 36.0 69.5 36.6 69.0 37.2 68.4 37.5 67.8 37.9 67.1 38.0 66.0 37.9 65.4 37.6 64.5 37.4 63.7 33.5 57.2 33.1 56.0 33.1 55.0 33.3 54.2 33.6 53.2 33.9 52.2 38.2 43.7 45.7 28.5 47.1 26.1 48.7 23.9 50.6 21.7 51.0 21.0 51.3 20.4 51.4 19.6 51.2 18.8 47.8 5.8 47.7 4.8 47.8 3.9 48.0 2.9 48.4 2.0 49.2 1.3 50.1 0.6 51.0 0.2 51.9 0.0 53.0 0.0 54.1 0.3 55.4 0.9 56.9 1.8 58.0 2.5 59.2 3.5 60.6 4.5 62.2 6.2 69.2 13.8 69.6 14.6 69.7 15.1 69.6 15.7 69.3 16.3 68.7 16.8 68.2 17.3 68.0 17.7 68.1 18.5 68.3 19.4 70.8 29.0 71.4 30.3 71.8 30.8 72.2 31.3 72.7 31.7 73.4 31.9 74.6 32.2 79.9 33.0 81.0 33.4 81.7 33.9 82.3 34.4 82.8 35.2 83.0 35.9 83.2 36.8 83.2 37.7 83.0 38.8 81.7 48.1 81.7 49.7 81.8 50.8 82.1 51.8 82.5 52.9 87.7 61.2 88.2 62.4 88.3 63.3 88.4 64.1 88.3 65.0 88.1 65.8 87.7 66.6 87.1 67.4 78.2 77.4 70.2 86.6 67.5 89.7 66.9 90.0 66.2 90.1 65.7 90.0 65.1 89.7 64.6 89.3 59.2 83.1 58.3 82.3 54.2 78.9 53.5 78.5 52.7 78.2 51.8 78.1 51.1 78.2 50.1 78.6 49.4 79.3 49.0 80.1 48.7 80.7 48.7 81.6 48.8 82.4 49.1 83.3 49.6 83.9 57.8 90.5 59.3 91.9 59.7 92.6 60.1 93.6 60.2 94.9 60.1 96.0 59.7 96.9 59.3 97.8 58.6 98.6 57.5 99.3 56.3 99.8 55.0 100.0 53.7 99.8 52.4 99.3 51.3 98.6 22.0 75.3Z"},"SIL":{"w":59.9,"h":100.0,"d":"M35.6 0.9 46.5 0.0 48.4 0.1 49.9 0.6 50.9 1.3 52.0 2.6 52.8 4.1 53.4 6.0 54.2 9.3 55.0 12.5 55.5 16.1 55.7 18.3 56.0 23.7 56.1 28.3 56.3 30.1 57.0 31.8 58.3 34.2 58.9 35.5 58.8 36.5 58.6 37.7 56.8 42.6 56.6 44.5 56.9 45.9 57.6 47.1 59.4 49.7 59.8 50.8 59.9 52.2 59.6 53.5 58.5 54.8 57.0 55.8 55.1 57.0 53.6 57.9 52.5 58.9 51.3 60.9 48.9 65.5 35.7 89.8 31.3 96.6 30.1 98.2 29.1 99.1 28.0 99.7 26.8 100.0 25.6 99.9 24.4 99.6 23.4 99.2 22.5 98.4 21.7 97.3 21.4 96.8 20.3 94.3 18.9 92.0 17.5 90.1 16.6 88.9 15.5 87.7 13.6 85.8 9.3 80.7 8.9 80.4 8.3 80.3 7.7 80.6 5.9 82.2 5.3 82.4 4.7 82.4 4.2 82.2 3.4 81.4 2.6 80.7 1.7 79.4 1.0 78.0 0.5 76.6 0.0 75.0 0.0 74.4 0.1 73.7 0.5 73.1 1.3 71.8 14.3 54.8 17.3 51.0 17.9 50.3 18.9 49.6 20.2 49.3 21.3 49.3 22.7 49.4 26.7 50.0 28.0 50.2 29.4 50.2 31.0 50.0 32.4 49.6 33.6 48.9 41.9 42.3 42.5 42.0 43.1 41.6 43.8 41.6 44.3 41.7 44.8 42.2 45.1 42.7 46.5 47.6 46.9 48.3 47.5 48.7 48.2 48.8 49.0 48.4 49.4 47.8 49.8 47.2 50.3 45.6 50.8 44.2 51.2 42.8 51.4 41.5 51.5 40.2 51.4 38.7 51.1 38.1 50.4 37.3 23.4 12.7 22.7 12.2 21.7 11.7 20.5 11.5 19.2 11.7 17.8 12.3 17.4 12.9 17.0 13.8 16.5 18.2 16.2 19.1 15.5 19.9 14.5 20.4 13.4 20.5 12.2 20.2 11.4 19.6 10.9 18.9 10.5 18.2 10.4 17.3 10.6 16.4 11.2 14.9 14.7 8.0 15.8 6.7 16.9 5.6 18.4 4.2 19.7 3.4 21.3 2.7 22.7 2.2 25.7 1.9 35.6 0.9Z"},"MZA":{"w":57.9,"h":100.0,"d":"M1.9 63.5 3.6 43.7 4.3 35.5 4.4 35.1 4.7 34.9 4.9 34.9 5.3 34.9 5.6 34.9 6.0 34.9 6.2 34.7 6.3 34.5 6.4 34.3 6.4 34.1 5.2 29.5 5.0 28.3 5.0 27.2 5.1 26.0 5.5 20.1 5.7 19.1 5.9 18.2 6.2 17.3 6.6 16.2 7.1 15.2 7.8 14.1 8.6 13.1 9.6 12.1 10.7 11.1 11.9 10.2 13.2 9.5 14.6 8.8 16.1 8.3 17.7 7.8 19.5 7.5 21.4 7.3 28.7 6.7 37.6 6.2 38.1 6.1 38.4 6.0 38.6 5.7 38.9 4.7 39.0 4.4 39.3 4.2 39.6 4.1 40.8 3.9 42.1 3.6 44.0 3.0 52.4 0.2 53.1 0.0 53.8 0.0 54.4 0.1 54.9 0.3 55.3 0.6 55.7 0.9 56.3 1.5 56.6 1.9 56.8 2.5 56.9 3.1 57.3 7.1 57.9 13.8 57.9 14.4 57.8 14.8 57.6 15.2 57.4 15.4 56.9 15.7 51.4 18.7 47.0 21.2 44.2 22.7 42.9 23.5 41.4 24.5 40.3 25.4 39.3 26.2 34.5 30.3 31.1 33.4 23.8 39.8 19.4 43.7 18.8 44.3 18.6 44.7 18.6 45.0 18.6 45.5 18.7 46.5 18.8 47.1 18.8 47.9 18.7 48.3 18.5 48.9 18.3 49.5 17.8 50.2 17.3 50.8 16.6 51.4 16.1 51.8 15.8 52.1 15.6 52.6 15.4 53.4 15.0 57.0 14.5 60.9 10.9 95.8 10.7 97.0 10.6 97.6 10.3 98.2 9.9 98.7 9.4 99.2 8.8 99.6 8.0 99.9 7.2 100.0 6.5 99.9 5.9 99.8 5.1 99.5 4.4 99.2 3.8 98.8 3.1 98.3 2.4 97.5 1.9 96.8 1.4 96.0 1.1 95.1 0.7 94.1 0.4 93.0 0.3 92.1 0.2 90.8 0.1 89.4 0.1 88.1 0.0 85.6 0.0 83.4 0.0 81.0 0.3 77.8 1.4 67.8 1.9 63.5Z"},"MON":{"w":75.5,"h":100.0,"d":"M49.3 19.5 49.2 18.5 49.4 17.6 50.0 16.3 50.5 15.4 52.3 13.2 61.2 1.1 61.8 0.3 62.7 0.0 63.8 0.3 64.6 1.0 65.2 2.0 65.3 3.1 65.3 4.0 65.4 4.8 65.9 5.7 66.4 6.4 67.4 7.8 68.1 9.1 68.3 9.8 68.7 10.3 69.2 10.4 69.8 10.2 70.3 9.7 70.4 9.1 70.1 8.5 69.4 7.9 67.0 5.0 66.7 4.3 66.7 3.6 66.9 3.0 67.1 2.5 68.2 2.0 69.9 1.6 70.8 1.2 71.8 0.8 73.1 0.4 74.5 0.3 75.2 0.7 75.5 1.8 75.2 8.6 74.2 15.6 73.1 20.1 71.9 23.3 69.8 26.9 67.4 30.0 64.0 33.8 59.0 36.8 56.0 38.2 50.3 40.9 46.5 42.2 40.9 43.6 37.2 44.1 35.3 44.5 35.0 45.1 34.9 45.6 34.8 46.1 34.6 46.7 33.7 47.0 32.6 47.2 31.3 46.4 30.6 46.4 20.4 47.7 15.4 48.5 10.7 49.2 9.4 49.4 8.6 49.5 7.9 50.2 7.0 52.1 6.1 54.0 5.5 55.8 5.2 57.1 4.9 59.4 4.9 63.4 4.9 64.4 5.2 65.1 5.8 65.7 7.1 66.6 7.9 67.4 8.3 68.3 8.4 69.5 9.9 77.9 10.3 79.4 10.4 79.9 10.3 80.5 10.0 81.0 9.1 81.6 8.3 82.0 8.1 82.5 8.3 83.7 9.2 86.5 10.1 88.5 10.9 90.1 12.4 92.3 14.3 94.1 15.7 94.9 17.2 95.7 18.0 96.0 18.4 96.4 18.8 97.8 18.6 98.5 17.9 98.9 14.8 99.7 13.1 100.0 12.0 100.0 11.0 99.9 10.3 99.4 9.9 99.0 9.9 98.0 9.8 97.3 9.5 96.4 7.7 94.2 6.5 92.2 5.5 90.6 4.4 87.7 2.1 79.7 1.5 77.1 1.0 74.3 0.5 70.2 0.0 64.9 0.0 61.5 0.1 58.8 0.4 56.1 0.9 54.2 1.5 52.5 1.8 51.4 1.9 50.5 1.9 49.1 1.9 48.2 2.1 47.7 2.9 47.3 4.6 46.9 6.2 46.9 8.3 46.6 11.3 46.2 13.9 45.7 20.6 43.8 24.4 42.7 27.8 42.2 30.2 42.0 32.0 41.3 37.4 38.8 39.7 37.8 43.1 37.1 46.0 36.7 48.7 36.2 50.2 35.7 52.1 34.5 53.7 32.8 54.6 31.4 55.0 29.9 54.9 28.4 54.7 26.9 54.1 25.3 53.3 23.8 52.1 22.8 51.0 21.8 50.4 21.3 49.9 20.7 49.3 19.5Z"}};
 function cellTrack(i,o){
@@ -449,15 +474,15 @@ function trackSVG(i,cls='big'){
 const r5=x=>Math.max(5,Math.round(x/5)*5);
 const r10=x=>Math.ceil(x/10)*10;
 const rentTable=sq=>[r5(sq.price*.07),r5(sq.price*.45),r5(sq.price*1.2),r5(sq.price*2.4),r5(sq.price*3.6)];
-const LV_SHORT=['Base','1T','2T','3T','GP'];
+const LV_SHORT=T(['Base','1T','2T','3T','GP'],['Base','1G','2G','3G','GP']);
 const COLORS=['#e10a1e','#2563eb','#d97706','#9333ea','#15a34a','#0891b2'];
 const PCTS=[0,10,20,30,40,50,60,70,75];
 const TEAMS={
-  sponsor:{i:'💰',n:"Sponsor d'oro",d:'+€50M in più a ogni passaggio dal via'},
-  eng:{i:'🔧',n:'Ingegneri',d:'Tribune e GP costano il 25% in meno'},
-  law:{i:'⚖️',n:'Avvocati',d:'Tasse e multe dimezzate, bustarella riesce al 75%'},
-  mkt:{i:'📣',n:'Marketing',d:'Diritti incassati +15%'},
-  aero:{i:'🪽',n:'Aerodinamica',d:'In zona DRS avanzi di 6 invece di 3'},
+  sponsor:{i:'💰',n:T("Sponsor d'oro",'Golden Sponsor'),d:T('+€50M in più a ogni passaggio dal via','+€50M extra every time you pass GO')},
+  eng:{i:'🔧',n:T('Ingegneri','Engineers'),d:T('Tribune e GP costano il 25% in meno','Grandstands and GPs cost 25% less')},
+  law:{i:'⚖️',n:T('Avvocati','Lawyers'),d:T('Tasse e multe dimezzate, bustarella riesce al 75%','Taxes and fines halved, bribes work 75% of the time')},
+  mkt:{i:'📣',n:'Marketing',d:T('Diritti incassati +15%','+15% on fees you collect')},
+  aero:{i:'🪽',n:T('Aerodinamica','Aero'),d:T('In zona DRS avanzi di 6 invece di 3','DRS zones move you 6 instead of 3')},
 };
 const TEAM_IDS=Object.keys(TEAMS);
 const rndTeam=()=>TEAM_IDS[Math.floor(Math.random()*TEAM_IDS.length)];
@@ -465,37 +490,39 @@ const tm=p=>TEAMS[p&&p.team]||null;
 const DF={easy:{reserve:260,build:380,bid:.8,accept:1.0,trade:.4},normal:{reserve:150,build:250,bid:1,accept:1.1,trade:1},shark:{reserve:70,build:140,bid:1.2,accept:1.25,trade:1}};
 const df=()=>DF[(S&&S.diff)||'normal'];
 const PTS=[25,18,15,12,10,8];
-const RACES=['GP Oasi Rossa','GP del Principato',"GP dell'Isola del Fiume",'GP del Vecchio Aeroporto','GP delle Ardenne','GP del Tempio','GP di Mezzanotte','GP Otto Volante','GP Paulista','GP Neon Strip'];
-const MODES=[['single','Partita singola'],['c3','🏆 Campionato · 3 gare'],['c5','🏆 5 gare']];
-const DIFFS=[['easy','🙂 Facile'],['normal','😐 Normale'],['shark','🦈 Squalo']];
+const RACES=T(['GP Oasi Rossa','GP del Principato',"GP dell'Isola del Fiume",'GP del Vecchio Aeroporto','GP delle Ardenne','GP del Tempio','GP di Mezzanotte','GP Otto Volante','GP Paulista','GP Neon Strip'],
+  ['Red Oasis GP','Principality GP','River Island GP','Old Airfield GP','Ardennes GP','Temple GP','Midnight GP','Figure Eight GP','Paulista GP','Neon Strip GP']);
+const FINALE=T('GP Neon Strip','Neon Strip GP');
+const MODES=[['single',T('Partita singola','Quick game')],['c3',T('🏆 Campionato · 3 gare','🏆 Championship · 3 races')],['c5',T('🏆 5 gare','🏆 5 races')]];
+const DIFFS=[['easy',T('🙂 Facile','🙂 Easy')],['normal',T('😐 Normale','😐 Normal')],['shark',T('🦈 Squalo','🦈 Shark')]];
 
 const CARDS=[
-  {txt:'Giro più veloce! +€100M', fx:async p=>gain(p,100)},
-  {txt:'Vittoria sotto la pioggia. Lo sponsor versa €150M', fx:async p=>gain(p,150)},
-  {txt:'Track limits ×3. Multa €50M', fx:async p=>pay(p,50,null,'track limits')},
-  {txt:'Nuovo title sponsor. +€200M', fx:async p=>gain(p,200)},
-  {txt:'Ala anteriore distrutta. Riparazione €80M', fx:async p=>pay(p,80,null,'riparazione ala')},
-  {txt:'Unsafe release: Stop & Go!', fx:async p=>stopGo(p,'Unsafe release · Stop & Go')},
-  {txt:'Undercut perfetto: vai al Semaforo Verde', fx:async p=>{await moveTo(p,0); await resolve(p);}},
-  {txt:'Scia sul rettilineo: avanti di 4', fx:async p=>{await moveSteps(p,4); await resolve(p);}},
-  {txt:'Testacoda: indietro di 3', fx:async p=>{await moveSteps(p,-3); await resolve(p);}},
-  {txt:'Diritti TV: ogni avversario ti paga €30M', fx:async p=>{for(const o of rivals(p)) await pay(o,30,p,'diritti TV');}},
-  {txt:'Festa in hospitality: €25M a ogni avversario', fx:async p=>{for(const o of rivals(p)){ if(p.out) break; await pay(p,25,o,'hospitality'); }}},
-  {txt:'Ispezione dei commissari: €25M a tribuna, €100M a GP', fx:async p=>{
+  {txt:T('Giro più veloce! +€100M','Fastest lap! +€100M'), fx:async p=>gain(p,100)},
+  {txt:T('Vittoria sotto la pioggia. Lo sponsor versa €150M','Win in the rain. Your sponsor pays €150M'), fx:async p=>gain(p,150)},
+  {txt:T('Track limits ×3. Multa €50M','Track limits ×3. €50M fine'), fx:async p=>pay(p,50,null,'track limits')},
+  {txt:T('Nuovo title sponsor. +€200M','New title sponsor. +€200M'), fx:async p=>gain(p,200)},
+  {txt:T('Ala anteriore distrutta. Riparazione €80M','Front wing destroyed. €80M repair'), fx:async p=>pay(p,80,null,T('riparazione ala','wing repair'))},
+  {txt:T('Unsafe release: Stop & Go!','Unsafe release: Stop & Go!'), fx:async p=>stopGo(p,'Unsafe release · Stop & Go')},
+  {txt:T('Undercut perfetto: vai al Semaforo Verde','Perfect undercut: go to Green Light'), fx:async p=>{await moveTo(p,0); await resolve(p);}},
+  {txt:T('Scia sul rettilineo: avanti di 4','Slipstream on the straight: forward 4'), fx:async p=>{await moveSteps(p,4); await resolve(p);}},
+  {txt:T('Testacoda: indietro di 3','Spin! Back 3'), fx:async p=>{await moveSteps(p,-3); await resolve(p);}},
+  {txt:T('Diritti TV: ogni avversario ti paga €30M','TV rights: every rival pays you €30M'), fx:async p=>{for(const o of rivals(p)) await pay(o,30,p,T('diritti TV','TV rights'));}},
+  {txt:T('Festa in hospitality: €25M a ogni avversario','Hospitality party: pay every rival €25M'), fx:async p=>{for(const o of rivals(p)){ if(p.out) break; await pay(p,25,o,'hospitality'); }}},
+  {txt:T('Ispezione dei commissari: €25M a tribuna, €100M a GP','Stewards inspection: €25M per grandstand, €100M per GP'), fx:async p=>{
     let n=0; for(const i of propsOf(p)){ const l=S.own[i].level; n+= l===4?100:l*25; }
-    if(n>0) await pay(p,n,null,'ispezione dei commissari'); }},
-  {txt:'Bandiera verde: annulla uno Stop & Go. Tienila!', fx:async p=>{p.flags++; sfx('coin');}},
-  {txt:'Invito al Tempio della Velocità: vai lì', fx:async p=>{await moveTo(p,30); await resolve(p);}},
-  {txt:"Test privato: vai all'Otto Volante", fx:async p=>{await moveTo(p,15); await resolve(p);}},
-  {txt:'Fuga di notizie: un giornalista ti paga €40M per uno scoop', fx:async p=>gain(p,40)},
-  {txt:'Spionaggio tecnico scoperto: multa €120M', fx:async p=>pay(p,120,null,'spionaggio')},
-  {txt:'Pole position al sabato: +€60M', fx:async p=>gain(p,60)},
-  {txt:'Pit stop da 1,8 secondi: avanti di 2', fx:async p=>{await moveSteps(p,2); await resolve(p);}},
-  {txt:'Gomme finite: rientri in Pit Lane (senza penalità)', fx:async p=>{p.pos=PIT;sfx('engine');render();await wait(400);}},
-  {txt:'Ordine di scuderia: raggiungi il pilota più ricco', fx:async p=>{const l=rivals(p).sort((a,b)=>netWorth(b)-netWorth(a))[0]; if(!l||l.pos===p.pos) return; await moveTo(p,l.pos); await resolve(p);}},
-  {txt:'Diretta in streaming: +€20M per ogni tuo circuito', fx:async p=>{const n=propsOf(p).length; if(n) gain(p,20*n);}},
-  {txt:'Lo sponsor ti scarica: €15M per ogni tuo circuito', fx:async p=>{const n=propsOf(p).length; if(n) await pay(p,15*n,null,'sponsor perso');}},
-  {txt:'Bandiera gialla: vai alla Safety Car', fx:async p=>{await moveTo(p,16); await resolve(p);}},
+    if(n>0) await pay(p,n,null,T('ispezione dei commissari','stewards inspection')); }},
+  {txt:T('Bandiera verde: annulla uno Stop & Go. Tienila!','Green flag: cancels a Stop & Go. Keep it!'), fx:async p=>{p.flags++; sfx('coin');}},
+  {txt:T('Invito al Tempio della Velocità: vai lì','Invitation to the Temple of Speed: go there'), fx:async p=>{await moveTo(p,30); await resolve(p);}},
+  {txt:T("Test privato: vai all'Otto Volante",'Private test: go to Figure Eight'), fx:async p=>{await moveTo(p,15); await resolve(p);}},
+  {txt:T('Fuga di notizie: un giornalista ti paga €40M per uno scoop','News leak: a journalist pays you €40M for a scoop'), fx:async p=>gain(p,40)},
+  {txt:T('Spionaggio tecnico scoperto: multa €120M','Technical espionage exposed: €120M fine'), fx:async p=>pay(p,120,null,T('spionaggio','espionage'))},
+  {txt:T('Pole position al sabato: +€60M','Saturday pole position: +€60M'), fx:async p=>gain(p,60)},
+  {txt:T('Pit stop da 1,8 secondi: avanti di 2','1.8-second pit stop: forward 2'), fx:async p=>{await moveSteps(p,2); await resolve(p);}},
+  {txt:T('Gomme finite: rientri in Pit Lane (senza penalità)','Tyres worn out: back to Pit Lane (no penalty)'), fx:async p=>{p.pos=PIT;sfx('engine');render();await wait(400);}},
+  {txt:T('Ordine di scuderia: raggiungi il pilota più ricco','Team orders: join the richest driver'), fx:async p=>{const l=rivals(p).sort((a,b)=>netWorth(b)-netWorth(a))[0]; if(!l||l.pos===p.pos) return; await moveTo(p,l.pos); await resolve(p);}},
+  {txt:T('Diretta in streaming: +€20M per ogni tuo circuito','Live stream: +€20M for each circuit you own'), fx:async p=>{const n=propsOf(p).length; if(n) gain(p,20*n);}},
+  {txt:T('Lo sponsor ti scarica: €15M per ogni tuo circuito','Sponsor drops you: €15M for each circuit you own'), fx:async p=>{const n=propsOf(p).length; if(n) await pay(p,15*n,null,T('sponsor perso','lost sponsor'));}},
+  {txt:T('Bandiera gialla: vai alla Safety Car','Yellow flag: go to Safety Car'), fx:async p=>{await moveTo(p,16); await resolve(p);}},
 ];
 
 // ================= Stato e utilità =================
@@ -628,7 +655,7 @@ function musicStop(fade=.7){
   try{g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+fade);}catch(e){}
   setTimeout(()=>{try{g.disconnect();}catch(e){}},fade*1000+300);paintMusic();
 }
-function paintMusic(){const b=$('#musicbtn');if(b){b.textContent=MUSIC.on&&!muted?'🎵 Musica':'🔇 Musica';b.setAttribute('aria-pressed',MUSIC.on&&!muted?'true':'false');}}
+function paintMusic(){const b=$('#musicbtn');if(b){b.textContent=(MUSIC.on&&!muted?'🎵 ':'🔇 ')+T('Musica','Music');b.setAttribute('aria-pressed',MUSIC.on&&!muted?'true':'false');}}
 function sfx(n){
   if(muted) return;
   if(SFX[n]) try{SFX[n]();}catch(e){}
@@ -663,15 +690,15 @@ function rentOf(i){
 function pickWeekend(){
   const cs=SQ.map((s,i)=>i).filter(i=>SQ[i].t==='c');
   S.weekend=cs[Math.floor(Math.random()*cs.length)];
-  log(`🏁 GP del weekend: ${SQ[S.weekend].name} · diritti ×2`);
+  log(T(`🏁 GP del weekend: ${SQ[S.weekend].name} · diritti ×2`,`🏁 Weekend GP: ${SQ[S.weekend].name} · fees ×2`));
 }
 const st=id=>(S.stats=S.stats||{})[id]||(S.stats[id]={rent:0,deals:0,built:0});
 function canUpgrade(p,i){const sq=SQ[i],o=S.own[i];return sq.t==='c'&&o&&o.owner===p.id&&o.level<4&&ownsGroup(p,sq.g)&&!groupHasMort(sq.g)&&p.cash>=upCost(i);}
-function upgrade(i){const p=P(S.own[i].owner),c=upCost(i);p.cash-=c;S.own[i].level++;st(p.id).built++;sfx('build');log(`${p.name}: ${S.own[i].level===4?'GP':'tribuna'} a ${SQ[i].name} (−${fmt(c)})`);}
-function sellUpgrade(i){const o=S.own[i],p=P(o.owner),c=lvCost(i,o.level),b=Math.floor(c/2);o.level--;p.cash+=b;sfx('coin');log(`${p.name} smonta a ${SQ[i].name} (+${fmt(b)})`);}
+function upgrade(i){const p=P(S.own[i].owner),c=upCost(i);p.cash-=c;S.own[i].level++;st(p.id).built++;sfx('build');log(T(`${p.name}: ${S.own[i].level===4?'GP':'tribuna'} a ${SQ[i].name} (−${fmt(c)})`,`${p.name}: ${S.own[i].level===4?'GP':'grandstand'} at ${SQ[i].name} (−${fmt(c)})`));}
+function sellUpgrade(i){const o=S.own[i],p=P(o.owner),c=lvCost(i,o.level),b=Math.floor(c/2);o.level--;p.cash+=b;sfx('coin');log(T(`${p.name} smonta a ${SQ[i].name} (+${fmt(b)})`,`${p.name} dismantles at ${SQ[i].name} (+${fmt(b)})`));}
 function canMortgage(i){const o=S.own[i];return o&&!o.mort&&o.level===0&&(SQ[i].t==='u'||!groupHasUpgrades(SQ[i].g));}
-function mortgage(i){const o=S.own[i],p=P(o.owner);o.mort=true;p.cash+=mortValue(i);sfx('coin');log(`${p.name} ipoteca ${SQ[i].name} (+${fmt(mortValue(i))})`);}
-function unmortgage(i){const o=S.own[i],p=P(o.owner),c=unmortCost(i);if(p.cash<c)return;p.cash-=c;o.mort=false;sfx('pay');log(`${p.name} riscatta ${SQ[i].name} (−${fmt(c)})`);}
+function mortgage(i){const o=S.own[i],p=P(o.owner);o.mort=true;p.cash+=mortValue(i);sfx('coin');log(T(`${p.name} ipoteca ${SQ[i].name} (+${fmt(mortValue(i))})`,`${p.name} mortgages ${SQ[i].name} (+${fmt(mortValue(i))})`));}
+function unmortgage(i){const o=S.own[i],p=P(o.owner),c=unmortCost(i);if(p.cash<c)return;p.cash-=c;o.mort=false;sfx('pay');log(T(`${p.name} riscatta ${SQ[i].name} (−${fmt(c)})`,`${p.name} unmortgages ${SQ[i].name} (−${fmt(c)})`));}
 function hasAssets(p){return propsOf(p).some(i=>S.own[i].level>0||canMortgage(i));}
 function autoRaise(p,need){
   for(let g=0;g<200&&p.cash<need;g++){
@@ -701,8 +728,8 @@ async function bankrupt(p,creditor){
   p.cash=0;p.out=true;p.stopgo=false;p.outAt=Date.now();
   S.roys=(S.roys||[]).filter(r=>r.holder!==p.id);
   S.pacts=(S.pacts||[]).filter(x=>x.a!==p.id&&x.b!==p.id);
-  log(`💥 ${p.name} in bancarotta${creditor?': tutto a '+creditor.name:''}`);
-  setMsg(`${p.name} in bancarotta!`,'warn'); render(); await wait(900);
+  log(T(`💥 ${p.name} in bancarotta${creditor?': tutto a '+creditor.name:''}`,`💥 ${p.name} is bankrupt${creditor?': everything goes to '+creditor.name:''}`));
+  setMsg(T(`${p.name} in bancarotta!`,`${p.name} is bankrupt!`),'warn'); render(); await wait(900);
   checkOver();
 }
 function checkOver(){if(S.players.filter(p=>!p.out).length<=1&&!S.over)endGame();}
@@ -718,7 +745,7 @@ function endGame(){
     S.gained=ranking().map((p,k)=>{const g=(PTS[k]||0)*mult;c.pts[p.id]+=g;return g;});
     c.wins[w.id]++;c.results.push(ranking().map(p=>p.id));
   }
-  setMsg(c?`🏁 ${w.name} vince il ${c.names[c.idx]}!`:`🏁 ${w.name} campione!`,'good');log(`Bandiera a scacchi: vince ${w.name}`);
+  setMsg(c?T(`🏁 ${w.name} vince il ${c.names[c.idx]}!`,`🏁 ${w.name} wins the ${c.names[c.idx]}!`):T(`🏁 ${w.name} campione!`,`🏁 ${w.name} is the champion!`),'good');log(T(`Bandiera a scacchi: vince ${w.name}`,`Chequered flag: ${w.name} wins`));
   sfx('win');save();render();confetti(220);showGameOver();
 }
 
@@ -728,23 +755,23 @@ function openSheet(html,dismiss=true){$('#sheet').innerHTML=html;$('#backdrop').
 function closeSheet(){$('#backdrop').hidden=true;$('#sheet').innerHTML='';}
 function ask(html){return new Promise(res=>{choice=res;openSheet(html,false);});}
 $('#backdrop').addEventListener('click',e=>{if(e.target.id==='backdrop'&&sheetDismiss)closeSheet();});
-const handoff=p=>S.players.filter(x=>!x.cpu&&!x.out).length>1?`<div class="handoff">📱 Passa il telefono a ${tok(p)} ${esc(p.name)}</div>`:'';
+const handoff=p=>S.players.filter(x=>!x.cpu&&!x.out).length>1?`<div class="handoff">📱 ${T('Passa il telefono a','Pass the phone to')} ${tok(p)} ${esc(p.name)}</div>`:'';
 
 async function debtScreen(p,amt,creditor,why){
   while(p.cash<amt){
     const mine=propsOf(p).sort((a,b)=>a-b);
     const tiles=mine.map(i=>{
       const o=S.own[i];let a='';
-      if(o.level>0) a+=`<button class="btn xs dark" data-choice="down:${i}">Smonta +${fmt(Math.floor(lvCost(i,o.level)/2))}</button>`;
-      if(canMortgage(i)) a+=`<button class="btn xs dark" data-choice="mort:${i}">Ipoteca +${fmt(mortValue(i))}</button>`;
+      if(o.level>0) a+=`<button class="btn xs dark" data-choice="down:${i}">${T('Smonta','Dismantle')} +${fmt(Math.floor(lvCost(i,o.level)/2))}</button>`;
+      if(canMortgage(i)) a+=`<button class="btn xs dark" data-choice="mort:${i}">${T('Ipoteca','Mortgage')} +${fmt(mortValue(i))}</button>`;
       if(!a) return '';
-      return `<div class="tile ${o.mort?'mort':''}" style="--g:${gcol(i)}"><div class="h"><b>${esc(SQ[i].name)}</b><span>${o.mort?'IPO':LV_SHORT[o.level]}</span></div><div class="a">${a}</div></div>`;
+      return `<div class="tile ${o.mort?'mort':''}" style="--g:${gcol(i)}"><div class="h"><b>${esc(SQ[i].name)}</b><span>${o.mort?T('IPO','MTG'):LV_SHORT[o.level]}</span></div><div class="a">${a}</div></div>`;
     }).join('');
     const any=hasAssets(p);
-    const c=await ask(`${handoff(p)}<h2>${any?'Servono fondi':'Bancarotta'}</h2>
-      <div class="debt"><span>${esc(why)}${creditor?' → '+esc(creditor.name):''}<br><small class="muted">In cassa ${fmt(p.cash)}</small></span><b>${fmt(amt)}</b></div>
-      ${any?`<div class="tiles">${tiles}</div>`:`<p>Niente più da ipotecare o smontare.</p>`}
-      <div class="row"><button class="btn ${any?'out':'primary'}" data-choice="bk" ${any?'disabled':''}>Dichiara bancarotta</button></div>`);
+    const c=await ask(`${handoff(p)}<h2>${any?T('Servono fondi','You need cash'):T('Bancarotta','Bankruptcy')}</h2>
+      <div class="debt"><span>${esc(why)}${creditor?' → '+esc(creditor.name):''}<br><small class="muted">${T('In cassa','Cash')} ${fmt(p.cash)}</small></span><b>${fmt(amt)}</b></div>
+      ${any?`<div class="tiles">${tiles}</div>`:`<p>${T('Niente più da ipotecare o smontare.','Nothing left to mortgage or dismantle.')}</p>`}
+      <div class="row"><button class="btn ${any?'out':'primary'}" data-choice="bk" ${any?'disabled':''}>${T('Dichiara bancarotta','Declare bankruptcy')}</button></div>`);
     if(c==='bk') break;
     const [k,i]=c.split(':');
     if(k==='down') sellUpgrade(+i); else if(k==='mort') mortgage(+i);
@@ -758,7 +785,7 @@ async function moveSteps(p,n){
   const dir=Math.sign(n);stepK=0;
   for(let k=0;k<Math.abs(n);k++){
     p.pos=(p.pos+dir+32)%32;
-    if(dir>0&&p.pos===0){const b=LAP_BONUS+(p.team==='sponsor'?50:0);p.cash+=b;sfx('coin');log(`${p.name} passa dal via +${fmt(b)}`);}
+    if(dir>0&&p.pos===0){const b=LAP_BONUS+(p.team==='sponsor'?50:0);p.cash+=b;sfx('coin');log(T(`${p.name} passa dal via +${fmt(b)}`,`${p.name} passes GO +${fmt(b)}`));}
     else sfx('step');
     render(); await wait(130);
   }
@@ -771,34 +798,34 @@ async function resolve(p){
   const sq=SQ[p.pos];
   if(sq.t==='c'||sq.t==='u'){
     const o=S.own[p.pos];
-    if(!o){S.phase='buy';S.pending=p.pos;setMsg(`${sq.name} libero`);return;}
-    if(o.owner===p.id){setMsg(`In casa a ${sq.code}`);return;}
+    if(!o){S.phase='buy';S.pending=p.pos;setMsg(T(`${sq.name} libero`,`${sq.name} is for sale`));return;}
+    if(o.owner===p.id){setMsg(T(`In casa a ${sq.code}`,`Home track: ${sq.code}`));return;}
     const owner=P(o.owner);
-    if(o.mort){setMsg(`${sq.code} ipotecato: gratis`,'good');return;}
-    if(pactActive(p.id,owner.id)){setMsg(`🤝 Patto con ${owner.name}: gratis`,'good');log(`${p.name} non paga ${owner.name} (patto)`);return;}
+    if(o.mort){setMsg(T(`${sq.code} ipotecato: gratis`,`${sq.code} is mortgaged: free`),'good');return;}
+    if(pactActive(p.id,owner.id)){setMsg(T(`🤝 Patto con ${owner.name}: gratis`,`🤝 Pact with ${owner.name}: free`),'good');log(T(`${p.name} non paga ${owner.name} (patto)`,`${p.name} pays nothing to ${owner.name} (pact)`));return;}
     const r=rentOf(p.pos);
-    setMsg(`${S.weekend===p.pos?'🏁 GP! ':''}Diritti ${fmt(r)} → ${owner.name}`,'warn');render();
-    const ok=await pay(p,r,owner,`diritti ${sq.name}`);
+    setMsg(`${S.weekend===p.pos?'🏁 GP! ':''}${T('Diritti','Fee')} ${fmt(r)} → ${owner.name}`,'warn');render();
+    const ok=await pay(p,r,owner,T(`diritti ${sq.name}`,`fee at ${sq.name}`));
     if(ok) st(owner.id).rent+=r;
     if(ok) for(const ry of roysOn(p.pos)){
       const h=P(ry.holder); if(h.out||ry.holder===owner.id) continue;
       const cut=Math.floor(r*ry.pct/100); if(cut<=0) continue;
       const amt=Math.min(cut,owner.cash); owner.cash-=amt; h.cash+=amt;
-      log(`🕶️ ${h.name} incassa il ${ry.pct}% (${fmt(amt)}) su ${sq.name}`);
+      log(T(`🕶️ ${h.name} incassa il ${ry.pct}% (${fmt(amt)}) su ${sq.name}`,`🕶️ ${h.name} collects ${ry.pct}% (${fmt(amt)}) on ${sq.name}`));
     }
     return;
   }
   switch(sq.t){
     case 'card':return drawCard(p);
     case 'tax':setMsg(`${sq.name} ${fmt(sq.amount)}`,'warn');await pay(p,sq.amount,null,sq.name);return;
-    case 'drs':{const n=p.team==='aero'?6:3;setMsg(`DRS aperto: +${n}`,'good');sfx('engine');render();await wait(500);await moveSteps(p,n);return resolve(p);}
-    case 'cops':return stopGo(p,'Commissari di gara · Stop & Go');
-    case 'pit':setMsg('Transito in Pit Lane');return;
+    case 'drs':{const n=p.team==='aero'?6:3;setMsg(T(`DRS aperto: +${n}`,`DRS open: +${n}`),'good');sfx('engine');render();await wait(500);await moveSteps(p,n);return resolve(p);}
+    case 'cops':return stopGo(p,T('Commissari di gara · Stop & Go','Race stewards · Stop & Go'));
+    case 'pit':setMsg(T('Transito in Pit Lane','Driving through Pit Lane'));return;
     case 'sc':
-      if(S.pot>0){const w=S.pot;S.pot=0;gain(p,w);setMsg(`🚨 Montepremi Safety Car: +${fmt(w)}`,'good');log(`${p.name} incassa il montepremi (${fmt(w)})`);render();if(w>=150)confetti(90);}
-      else setMsg('Safety Car: montepremi vuoto');
+      if(S.pot>0){const w=S.pot;S.pot=0;gain(p,w);setMsg(T(`🚨 Montepremi Safety Car: +${fmt(w)}`,`🚨 Safety Car jackpot: +${fmt(w)}`),'good');log(T(`${p.name} incassa il montepremi (${fmt(w)})`,`${p.name} collects the jackpot (${fmt(w)})`));render();if(w>=150)confetti(90);}
+      else setMsg(T('Safety Car: montepremi vuoto','Safety Car: the jackpot is empty'));
       return;
-    case 'go':setMsg('Semaforo Verde!');return;
+    case 'go':setMsg(T('Semaforo Verde!','Green Light!'));return;
   }
 }
 async function drawCard(p){
@@ -825,12 +852,12 @@ async function auction(i){
   const start=ids.indexOf(S.turn);ids=ids.slice(start).concat(ids.slice(0,start));
   const all=[...ids];let bid=0,leader=null,k=0;const max={};
   sfx('gavel');S.phase='auction';
-  const view=(p,human)=>`${human?handoff(p):''}<h2>🔨 Asta · ${esc(sq.name)}</h2>
+  const view=(p,human)=>`${human?handoff(p):''}<h2>🔨 ${T('Asta','Auction')} · ${esc(sq.name)}</h2>
     <div class="auc"><div class="thumb">${sq.t==='c'?trackSVG(i,'mini'):`<div class="band" style="--g:${gcol(i)};width:8px;height:56px"></div>`}</div>
-    <div><div class="big">${fmt(bid)}</div><div class="who">${leader!==null?tok(P(leader))+' '+esc(P(leader).name):'<span class="muted">Nessuna offerta · listino '+fmt(sq.price)+'</span>'}</div></div></div>
+    <div><div class="big">${fmt(bid)}</div><div class="who">${leader!==null?tok(P(leader))+' '+esc(P(leader).name):'<span class="muted">'+T('Nessuna offerta · listino ','No bids yet · list price ')+fmt(sq.price)+'</span>'}</div></div></div>
     <div class="bidders">${all.map(id=>`<span class="${ids.includes(id)?'':'gone'}">${tok(P(id))}${esc(P(id).name)}</span>`).join('')}</div>
-    ${human?`<div class="row">${[10,50,100].map(n=>`<button class="btn ${n===10?'primary':'dark'}" data-choice="${n}" ${bid+n>p.cash?'disabled':''}>+${n}</button>`).join('')}<button class="btn out" data-choice="pass">Passo</button></div>`
-      :`<div class="waitline">${tok(p)} ${esc(p.name)} ci pensa…</div>`}`;
+    ${human?`<div class="row">${[10,50,100].map(n=>`<button class="btn ${n===10?'primary':'dark'}" data-choice="${n}" ${bid+n>p.cash?'disabled':''}>+${n}</button>`).join('')}<button class="btn out" data-choice="pass">${T('Passo','Pass')}</button></div>`
+      :`<div class="waitline">${tok(p)} ${esc(p.name)} ${T('ci pensa…','is thinking…')}</div>`}`;
   for(let guard=0;guard<300&&ids.length;guard++){
     if(ids.length===1&&leader===ids[0]) break;
     const pid=ids[k%ids.length];
@@ -842,14 +869,14 @@ async function auction(i){
       const room=max[pid]-bid;
       c= room>=10 ? (room>150&&Math.random()<.4?'50':'10') : 'pass';
     } else c=await ask(view(p,true));
-    if(c==='pass'){ids.splice(k%ids.length,1);log(`${p.name} passa`);sfx('no');}
+    if(c==='pass'){ids.splice(k%ids.length,1);log(T(`${p.name} passa`,`${p.name} passes`));sfx('no');}
     else{bid+=+c;leader=pid;k++;sfx('bid');}
   }
   closeSheet();
   if(leader!==null){
     const w=P(leader);w.cash-=bid;S.own[i]={owner:w.id,level:0,mort:false};
-    sfx('gavel');setMsg(`🔨 ${w.name} vince ${sq.code} a ${fmt(bid)}`,'good');log(`Asta: ${w.name} compra ${sq.name} per ${fmt(bid)}`);
-  } else {setMsg(`${sq.code}: nessuna offerta`);log(`Asta deserta per ${sq.name}`);}
+    sfx('gavel');setMsg(T(`🔨 ${w.name} vince ${sq.code} a ${fmt(bid)}`,`🔨 ${w.name} wins ${sq.code} for ${fmt(bid)}`),'good');log(T(`Asta: ${w.name} compra ${sq.name} per ${fmt(bid)}`,`Auction: ${w.name} buys ${sq.name} for ${fmt(bid)}`));
+  } else {setMsg(T(`${sq.code}: nessuna offerta`,`${sq.code}: no bids`));log(T(`Asta deserta per ${sq.name}`,`No bids for ${sq.name}`));}
 }
 
 // ================= Turni =================
@@ -860,9 +887,9 @@ async function roll(){
   const p=cur(),d1=rnd6(),d2=rnd6();
   await animateDice(d1,d2);
   S.dice=[d1,d2];S.lastDbl=d1===d2;if(S.lastDbl)S.doubles++;
-  log(`${p.name} 🎲 ${d1}+${d2}${S.lastDbl?' doppio':''}`);
-  if(S.doubles>=3) await stopGo(p,'3 doppi: Stop & Go');
-  else{setMsg(S.lastDbl?`Doppio! ${d1+d2}`:`${d1+d2}`);await moveSteps(p,d1+d2);await resolve(p);}
+  log(`${p.name} 🎲 ${d1}+${d2}${S.lastDbl?T(' doppio',' double'):''}`);
+  if(S.doubles>=3) await stopGo(p,T('3 doppi: Stop & Go','3 doubles: Stop & Go'));
+  else{setMsg(S.lastDbl?T(`Doppio! ${d1+d2}`,`Double! ${d1+d2}`):`${d1+d2}`);await moveSteps(p,d1+d2);await resolve(p);}
   if(S.phase!=='buy'&&!S.over) S.phase=afterPhase();
   busy=false;save();render();
 }
@@ -870,9 +897,9 @@ function buy(){
   if(S.phase!=='buy'||busy) return;
   const p=cur(),i=S.pending,sq=SQ[i];if(p.cash<sq.price)return;
   p.cash-=sq.price;S.own[i]={owner:p.id,level:0,mort:false};sfx('buy');
-  log(`${p.name} compra ${sq.name} (${fmt(sq.price)})`);
+  log(T(`${p.name} compra ${sq.name} (${fmt(sq.price)})`,`${p.name} buys ${sq.name} (${fmt(sq.price)})`));
   const full=sq.g&&ownsGroup(p,sq.g);
-  setMsg(full?`Gruppo ${G[sq.g].n} completo!`:`${sq.code} è tuo`,'good');
+  setMsg(full?T(`Gruppo ${G[sq.g].n} completo!`,`${G[sq.g].n} group complete!`):T(`${sq.code} è tuo`,`${sq.code} is yours`),'good');
   if(full) confetti(80);
   S.pending=null;S.phase=afterPhase();save();render();
 }
@@ -891,9 +918,9 @@ function nextTurn(){
     S.round++;
     const exp=(S.roys||[]).filter(r=>S.round>r.until).length+(S.pacts||[]).filter(x=>S.round>x.until).length;
     S.roys=(S.roys||[]).filter(r=>S.round<=r.until);S.pacts=(S.pacts||[]).filter(x=>S.round<=x.until);
-    if(exp) log(`${exp} accordi sotto banco scaduti`);
+    if(exp) log(T(`${exp} accordi sotto banco scaduti`,`${exp} under-the-table deals expired`));
     recordHist();
-    if(S.limit&&S.round>S.limit){log(`Fine dei ${S.limit} giri`);endGame();return;}
+    if(S.limit&&S.round>S.limit){log(T(`Fine dei ${S.limit} giri`,`${S.limit} laps completed`));endGame();return;}
     pickWeekend();
   }
   S.turn=i;startTurn();
@@ -901,32 +928,32 @@ function nextTurn(){
 async function startTurn(){
   const p=cur();
   S.doubles=0;S.lastDbl=false;S.phase='roll';S.pending=null;
-  setMsg(`Tocca a ${p.name}`);banner(p);keepAwake();
+  setMsg(T(`Tocca a ${p.name}`,`${p.name}'s turn`));banner(p);keepAwake();
   if(p.loan&&S.round>p.loan.due){
     const owe=r5(p.loan.owe*1.2);p.loan=null;
-    setMsg(`🦈 Lo strozzino riscuote ${fmt(owe)}`,'warn');log(`🦈 Lo strozzino riscuote ${fmt(owe)} da ${p.name} (con mora)`);sfx('siren');render();await wait(900);
-    await pay(p,owe,null,'strozzino',{full:true});
+    setMsg(T(`🦈 Lo strozzino riscuote ${fmt(owe)}`,`🦈 The loan shark collects ${fmt(owe)}`),'warn');log(T(`🦈 Lo strozzino riscuote ${fmt(owe)} da ${p.name} (con mora)`,`🦈 The loan shark collects ${fmt(owe)} from ${p.name} (with penalty)`));sfx('siren');render();await wait(900);
+    await pay(p,owe,null,T('strozzino','loan shark'),{full:true});
     if(p.out||S.over){save();render();if(!S.over){await wait(700);nextTurn();}return;}
   }
   if(p.stopgo){
     S.phase='stopgo';save();render();
-    const c=p.cpu?cpuStopGo(p):await ask(`${handoff(p)}<h2>🚦 Stop &amp; Go</h2><p>${esc(p.name)} è fermo in Pit Lane.</p>
+    const c=p.cpu?cpuStopGo(p):await ask(`${handoff(p)}<h2>🚦 Stop &amp; Go</h2><p>${esc(p.name)} ${T('è fermo in Pit Lane.','is stuck in Pit Lane.')}</p>
       <div class="row">
-        ${p.flags>0?`<button class="btn primary" data-choice="flag">Bandiera verde ×${p.flags}</button>`:''}
-        <button class="btn ${p.flags?'dark':'primary'}" data-choice="pay" ${p.cash>=STOPGO_FEE?'':'disabled'}>Paga ${fmt(STOPGO_FEE)}</button>
-        <button class="btn dark" data-choice="bribe" ${p.cash>=BRIBE?'':'disabled'}>🕶️ Bustarella ${fmt(BRIBE)} <small>${p.team==='law'?75:50}%</small></button>
-        <button class="btn out" data-choice="skip">Salto il turno</button>
+        ${p.flags>0?`<button class="btn primary" data-choice="flag">${T('Bandiera verde','Green flag')} ×${p.flags}</button>`:''}
+        <button class="btn ${p.flags?'dark':'primary'}" data-choice="pay" ${p.cash>=STOPGO_FEE?'':'disabled'}>${T('Paga','Pay')} ${fmt(STOPGO_FEE)}</button>
+        <button class="btn dark" data-choice="bribe" ${p.cash>=BRIBE?'':'disabled'}>🕶️ ${T('Bustarella','Bribe')} ${fmt(BRIBE)} <small>${p.team==='law'?75:50}%</small></button>
+        <button class="btn out" data-choice="skip">${T('Salto il turno','Skip my turn')}</button>
       </div>`);
     closeSheet();
     p.stopgo=false;
-    if(c==='flag'){p.flags--;log(`${p.name} usa Bandiera verde`);sfx('coin');S.phase='roll';}
-    else if(c==='pay'){p.cash-=STOPGO_FEE;S.pot=(S.pot||0)+STOPGO_FEE;sfx('pay');log(`${p.name} paga lo Stop & Go`);S.phase='roll';}
+    if(c==='flag'){p.flags--;log(T(`${p.name} usa Bandiera verde`,`${p.name} uses a Green flag`));sfx('coin');S.phase='roll';}
+    else if(c==='pay'){p.cash-=STOPGO_FEE;S.pot=(S.pot||0)+STOPGO_FEE;sfx('pay');log(T(`${p.name} paga lo Stop & Go`,`${p.name} pays the Stop & Go`));S.phase='roll';}
     else if(c==='bribe'){
       p.cash-=BRIBE;S.pot=(S.pot||0)+BRIBE;sfx('pay');
-      if(Math.random()<(p.team==='law'?.75:.5)){setMsg('🕶️ Commissari corrotti: si riparte!','good');log(`${p.name} corrompe i commissari`);S.phase='roll';sfx('deal');}
-      else{setMsg('🕶️ Bustarella scoperta! Turno saltato','warn');log(`${p.name} scoperto a corrompere i commissari`);S.phase='end';sfx('siren');}
+      if(Math.random()<(p.team==='law'?.75:.5)){setMsg(T('🕶️ Commissari corrotti: si riparte!','🕶️ Stewards bribed: back on track!'),'good');log(T(`${p.name} corrompe i commissari`,`${p.name} bribes the stewards`));S.phase='roll';sfx('deal');}
+      else{setMsg(T('🕶️ Bustarella scoperta! Turno saltato','🕶️ Bribe exposed! Turn skipped'),'warn');log(T(`${p.name} scoperto a corrompere i commissari`,`${p.name} caught bribing the stewards`));S.phase='end';sfx('siren');}
     }
-    else{setMsg(`${p.name} sconta lo Stop & Go`,'warn');log(`${p.name} salta il turno`);S.phase='end';}
+    else{setMsg(T(`${p.name} sconta lo Stop & Go`,`${p.name} serves the Stop & Go`),'warn');log(T(`${p.name} salta il turno`,`${p.name} skips a turn`));S.phase='end';}
     save();render();
     if(S.phase==='end'){await wait(900);endTurn();return;}
   }
@@ -1011,7 +1038,7 @@ function execOffer(o){
   if(o.royGet.pct) o.get.forEach(i=>S.roys.push({prop:i,holder:b.id,pct:o.royGet.pct,until:S.round+o.royGet.turns}));
   if(o.pact) S.pacts.push({a:a.id,b:b.id,until:S.round+o.pact});
   st(a.id).deals++;st(b.id).deals++;
-  sfx('deal');log(`🤝 Affare ${a.name} ⇄ ${b.name}`);setMsg(`🤝 Affare ${a.name} ⇄ ${b.name}`,'good');
+  sfx('deal');log(`🤝 ${T('Affare','Deal')} ${a.name} ⇄ ${b.name}`);setMsg(`🤝 ${T('Affare','Deal')} ${a.name} ⇄ ${b.name}`,'good');
   save();render();
 }
 function rentPower(p){return propsOf(p).reduce((s,i)=>s+(S.own[i].mort?0:(SQ[i].t==='u'?40:rentOf(i))),0);}
@@ -1037,8 +1064,8 @@ function cpuRespond(o){
   const c=invert(o);
   if(c.cashGive>0){const red=Math.min(c.cashGive,deficit);c.cashGive-=red;const rest=deficit-red;if(rest>0)c.cashGet+=rest;}
   else c.cashGet+=deficit;
-  if(c.cashGet<=A.cash&&deficit<1500&&Math.random()<.85) return {type:'counter',offer:c,line:'Così non ci sto. Facciamo così:'};
-  if(c.give.length&&!c.royGive.pct){const c2=invert(o);c2.royGive={pct:50,turns:3};if(cpuEval(invert(c2)).gain>=0) return {type:'counter',offer:c2,line:'Niente soldi? Allora mi tengo il 50% dei diritti per 3 giri.'};}
+  if(c.cashGet<=A.cash&&deficit<1500&&Math.random()<.85) return {type:'counter',offer:c,line:T('Così non ci sto. Facciamo così:',"Not like that. Here's my offer:")};
+  if(c.give.length&&!c.royGive.pct){const c2=invert(o);c2.royGive={pct:50,turns:3};if(cpuEval(invert(c2)).gain>=0) return {type:'counter',offer:c2,line:T('Niente soldi? Allora mi tengo il 50% dei diritti per 3 giri.',"No cash? Then I keep 50% of the fees for 3 laps.")};}
   return {type:'reject'};
 }
 function offerSummary(o,viewer){
@@ -1047,11 +1074,11 @@ function offerSummary(o,viewer){
   const lst=a=>a.length?a.map(i=>`<span class="pick ${S.own[i].mort?'mort':''}"><span class="sw" style="--g:${gcol(i)}"></span>${esc(SQ[i].code)}</span>`).join(''):'';
   const side=(props,cash)=>`<div class="picks">${lst(props)}${cash?`<span class="pick">💰 ${fmt(cash)}</span>`:''}${!props.length&&!cash?'<span class="muted">—</span>':''}</div>`;
   const cl=[];
-  if(v.royGive.pct&&v.give.length) cl.push(`Tu tieni il ${v.royGive.pct}% dei diritti su ciò che cedi per ${v.royGive.turns} giri`);
-  if(v.royGet.pct&&v.get.length) cl.push(`${esc(other.name)} tiene il ${v.royGet.pct}% su ciò che ti cede per ${v.royGet.turns} giri`);
-  if(v.pact) cl.push(`Patto: nessun diritto tra voi per ${v.pact} giri`);
-  return `<div class="trade"><div><h3>Ricevi</h3>${side(v.get,v.cashGet)}</div><div><h3>Dai</h3>${side(v.give,v.cashGive)}</div></div>
-    ${cl.length?`<div class="clauses"><h3>🕶️ Sotto banco</h3>${cl.map(t=>`<div class="cl">${t}</div>`).join('')}</div>`:''}`;
+  if(v.royGive.pct&&v.give.length) cl.push(T(`Tu tieni il ${v.royGive.pct}% dei diritti su ciò che cedi per ${v.royGive.turns} giri`,`You keep ${v.royGive.pct}% of the fees on what you give for ${v.royGive.turns} laps`));
+  if(v.royGet.pct&&v.get.length) cl.push(T(`${esc(other.name)} tiene il ${v.royGet.pct}% su ciò che ti cede per ${v.royGet.turns} giri`,`${esc(other.name)} keeps ${v.royGet.pct}% on what you get for ${v.royGet.turns} laps`));
+  if(v.pact) cl.push(T(`Patto: nessun diritto tra voi per ${v.pact} giri`,`Pact: no fees between you for ${v.pact} laps`));
+  return `<div class="trade"><div><h3>${T('Ricevi','You get')}</h3>${side(v.get,v.cashGet)}</div><div><h3>${T('Dai','You give')}</h3>${side(v.give,v.cashGive)}</div></div>
+    ${cl.length?`<div class="clauses"><h3>🕶️ ${T('Sotto banco','Under the table')}</h3>${cl.map(t=>`<div class="cl">${t}</div>`).join('')}</div>`:''}`;
 }
 let TR=null,trResolve=null;
 function editOffer(o,locked,title){return new Promise(res=>{TR={o,locked,title};trResolve=res;paintEditor();});}
@@ -1063,16 +1090,16 @@ function paintEditor(err=''){
   openSheet(`${handoff(a)}<h2>${TR.title}</h2>
     ${TR.locked?'':`<div class="seg">${rivals(a).map(q=>`<button class="${q.id===o.to?'on':''}" data-act="tr-to" data-i="${q.id}">${tok(q)}${esc(q.name)}</button>`).join('')}</div>`}
     <div class="trade">
-      <div><h3>Dai · ${fmt(a.cash)}</h3><div class="picks">${tradable(a).map(i=>pick(i,'give')).join('')||'<span class="muted">—</span>'}</div>${step('cashGive')}</div>
-      <div><h3>Da ${esc(b.name)} · ${fmt(b.cash)}</h3><div class="picks">${tradable(b).map(i=>pick(i,'get')).join('')||'<span class="muted">—</span>'}</div>${step('cashGet')}</div>
+      <div><h3>${T('Dai','You give')} · ${fmt(a.cash)}</h3><div class="picks">${tradable(a).map(i=>pick(i,'give')).join('')||'<span class="muted">—</span>'}</div>${step('cashGive')}</div>
+      <div><h3>${T('Da','From')} ${esc(b.name)} · ${fmt(b.cash)}</h3><div class="picks">${tradable(b).map(i=>pick(i,'get')).join('')||'<span class="muted">—</span>'}</div>${step('cashGet')}</div>
     </div>
-    <div class="clauses"><h3>🕶️ Sotto banco</h3>
-      <div class="cl">Tieni il ${sel('rg',PCTS,o.royGive.pct,v=>v+'%')} dei diritti su ciò che cedi per ${sel('rgt',[1,2,3],o.royGive.turns,v=>v+' giri')}</div>
-      <div class="cl">${esc(b.name)} tiene il ${sel('rr',PCTS,o.royGet.pct,v=>v+'%')} su ciò che ti cede per ${sel('rrt',[1,2,3],o.royGet.turns,v=>v+' giri')}</div>
-      <div class="cl">Patto di non belligeranza ${sel('pc',[0,1,2,3],o.pact,v=>v?v+' giri':'no')}</div>
+    <div class="clauses"><h3>🕶️ ${T('Sotto banco','Under the table')}</h3>
+      <div class="cl">${T('Tieni il','Keep')} ${sel('rg',PCTS,o.royGive.pct,v=>v+'%')} ${T('dei diritti su ciò che cedi per','of the fees on what you give for')} ${sel('rgt',[1,2,3],o.royGive.turns,v=>v+T(' giri',' laps'))}</div>
+      <div class="cl">${esc(b.name)} ${T('tiene il','keeps')} ${sel('rr',PCTS,o.royGet.pct,v=>v+'%')} ${T('su ciò che ti cede per','on what you get for')} ${sel('rrt',[1,2,3],o.royGet.turns,v=>v+T(' giri',' laps'))}</div>
+      <div class="cl">${T('Patto di non belligeranza','Non-aggression pact')} ${sel('pc',[0,1,2,3],o.pact,v=>v?v+T(' giri',' laps'):T('no','none'))}</div>
     </div>
     ${err?`<p style="color:var(--red);font-weight:700">${err}</p>`:''}
-    <div class="row"><button class="btn primary" data-act="tr-send">Invia</button><button class="btn out" data-act="tr-cancel">${TR.locked?'Rifiuta':'Annulla'}</button></div>`,false);
+    <div class="row"><button class="btn primary" data-act="tr-send">${T('Invia','Send')}</button><button class="btn out" data-act="tr-cancel">${TR.locked?T('Rifiuta','Decline'):T('Annulla','Cancel')}</button></div>`,false);
 }
 function readSelects(){
   const o=TR.o,v=id=>{const e=$('#'+id);return e?+e.value:0;};
@@ -1080,7 +1107,7 @@ function readSelects(){
 }
 async function negotiate(o){
   for(let chain=0;chain<6;chain++){
-    if(!offerValid(o)){log('Trattativa saltata');return false;}
+    if(!offerValid(o)){log(T('Trattativa saltata','Negotiation fell through'));return false;}
     const R=P(o.to),A=P(o.from);
     let resp;
     if(R.cpu){
@@ -1092,22 +1119,22 @@ async function negotiate(o){
         }
       }
     } else {
-      const c=await ask(`${handoff(R)}<h2>📨 Offerta da ${tok(A)} ${esc(A.name)}</h2>${o.line?`<p><b>“${esc(o.line)}”</b></p>`:''}${offerSummary(o,R.id)}
-        <div class="row"><button class="btn primary" data-choice="ok">Accetta</button><button class="btn dark" data-choice="counter">Controfferta</button><button class="btn out" data-choice="no">Rifiuta</button></div>`);
+      const c=await ask(`${handoff(R)}<h2>📨 ${T('Offerta da','Offer from')} ${tok(A)} ${esc(A.name)}</h2>${o.line?`<p><b>“${esc(o.line)}”</b></p>`:''}${offerSummary(o,R.id)}
+        <div class="row"><button class="btn primary" data-choice="ok">${T('Accetta','Accept')}</button><button class="btn dark" data-choice="counter">${T('Controfferta','Counteroffer')}</button><button class="btn out" data-choice="no">${T('Rifiuta','Decline')}</button></div>`);
       closeSheet();
       if(c==='ok') resp={type:'accept'};
       else if(c==='no') resp={type:'reject'};
       else{
-        const n=await editOffer(invert(o),true,`Controfferta a ${esc(A.name)}`);
+        const n=await editOffer(invert(o),true,T(`Controfferta a ${esc(A.name)}`,`Counteroffer to ${esc(A.name)}`));
         resp=n?{type:'counter',offer:n}:{type:'reject'};
       }
     }
-    if(resp.type==='accept'){execOffer(o);if(R.cpu&&!A.cpu) await say(`${esc(R.name)} accetta! 🤝`);return true;}
-    if(resp.type==='reject'){sfx('no');log(`${R.name} rifiuta ${A.name}`);setMsg(`${R.name} rifiuta l'offerta`,'warn');render();if(R.cpu&&!A.cpu) await say(`${esc(R.name)} rifiuta.`);return false;}
+    if(resp.type==='accept'){execOffer(o);if(R.cpu&&!A.cpu) await say(T(`${esc(R.name)} accetta! 🤝`,`${esc(R.name)} accepts! 🤝`));return true;}
+    if(resp.type==='reject'){sfx('no');log(T(`${R.name} rifiuta ${A.name}`,`${R.name} declines ${A.name}`));setMsg(T(`${R.name} rifiuta l'offerta`,`${R.name} declines the offer`),'warn');render();if(R.cpu&&!A.cpu) await say(T(`${esc(R.name)} rifiuta.`,`${esc(R.name)} declines.`));return false;}
     o=resp.offer;if(resp.line)o.line=resp.line;
-    sfx('bid');log(`${R.name} fa una controfferta`);
+    sfx('bid');log(T(`${R.name} fa una controfferta`,`${R.name} makes a counteroffer`));
   }
-  log('Trattativa arenata');return false;
+  log(T('Trattativa arenata','Negotiation stalled'));return false;
 }
 function say(t){return ask(`<h2>${t}</h2><div class="row"><button class="btn primary" data-choice="ok">OK</button></div>`).then(()=>closeSheet());}
 function canTrade(){return !!S&&!S.over&&!busy&&!cur().cpu&&['roll','end'].includes(S.phase)&&rivals(cur()).length>0;}
@@ -1117,7 +1144,7 @@ async function startTrade(pre={}){
   const draft=blankOffer(p.id,q.id);
   if(pre.get) draft.get=pre.get.filter(i=>tradable(q).includes(i));
   if(pre.give) draft.give=pre.give.filter(i=>tradable(p).includes(i));
-  const o=await editOffer(draft,false,'Proponi affare');
+  const o=await editOffer(draft,false,T('Proponi affare','Propose a deal'));
   closeSheet();
   if(o) await negotiate(o);
   busy=false;save();render();
@@ -1140,7 +1167,7 @@ function side(i){if(i%8===0)return'k';if(i<8)return'b';if(i<16)return'l';if(i<24
 function buildBoard(){
   let h='';
   SQ.forEach((sq,i)=>{const[r,c]=coord(i);h+=`<button class="cell side-${side(i)}" id="c${i}" data-act="info" data-i="${i}" style="grid-area:${r}/${c}" aria-label="${esc(sq.name)}"></button>`;});
-  h+=`<div class="center"><div class="stage"><div class="brand">Paddock <b>Tycoon</b></div><div class="dice"><div class="die" id="d1">${dieHTML(5)}</div><div class="die" id="d2">${dieHTML(2)}</div></div><div class="now" id="now"></div><div class="msg" id="msg"></div><div class="pot" id="pot"></div></div></div><div class="cars" id="cars"></div><div class="banner" id="banner"></div>`;
+  h+=`<div class="center"><div class="stage"><div class="brand">${logoSVG('board')}</div><div class="dice"><div class="die" id="d1">${dieHTML(5)}</div><div class="die" id="d2">${dieHTML(2)}</div></div><div class="now" id="now"></div><div class="msg" id="msg"></div><div class="pot" id="pot"></div></div></div><div class="cars" id="cars"></div><div class="banner" id="banner"></div>`;
   const panel=document.querySelector('.side');
   $('#board').innerHTML=h;
   if(panel) $('.center').appendChild(panel);
@@ -1150,10 +1177,10 @@ function cellHTML(i){
   let h='';
   if(sq.t==='c'){
     let tx=`<span>${sq.code}</span>`;
-    if(o){ if(o.mort) tx+=`<span class="pr">IPO</span>`; else tx+=o.level===4?`<span class="lv"><b>GP</b></span>`:`<span class="lv">${'<i></i>'.repeat(o.level)}</span>`; }
+    if(o){ if(o.mort) tx+=`<span class="pr">${T('IPO','MTG')}</span>`; else tx+=o.level===4?`<span class="lv"><b>GP</b></span>`:`<span class="lv">${'<i></i>'.repeat(o.level)}</span>`; }
     else tx+=`<span class="pr">${sq.price}</span>`;
     h=`<span class="strip"></span><span class="ctrk">${cellTrack(i,o)}</span><span class="ctxt">${tx}</span>`;
-  } else if(sq.t==='u') h=`${sq.code==='GOMME'?IC.tyre:IC.fuel}${o?(o.mort?'<span class="pr">IPO</span>':''):`<span class="pr">${sq.price}</span>`}`;
+  } else if(sq.t==='u') h=`${i===10?IC.tyre:IC.fuel}${o?(o.mort?`<span class="pr">${T('IPO','MTG')}</span>`:''):`<span class="pr">${sq.price}</span>`}`;
   else if(sq.t==='go'||['pit','sc','cops'].includes(sq.t)) h=`<span class="lbl">${sq.code}</span>`;
   else if(sq.t==='card') h=`${IC.card}<span>RADIO</span>`;
   else if(sq.t==='tax') h=`${IC.tax}<span>${sq.amount}</span>`;
@@ -1173,12 +1200,12 @@ function render(){
   });
   const now=$('#now'),msg=$('#msg');
   placeCars();
-  if(!S){$('#tab').hidden=true;$('#pot').innerHTML='';now.innerHTML='<small>Griglia di partenza</small>';msg.textContent='';$('#tower').innerHTML='';$('#actions').innerHTML=`<div class="row"><button class="btn primary" data-act="setup">Nuova partita</button></div>`;$('#ticker').innerHTML='';return;}
+  if(!S){$('#tab').hidden=true;$('#pot').innerHTML='';now.innerHTML=`<small>${T('Griglia di partenza','Starting grid')}</small>`;msg.textContent='';$('#tower').innerHTML='';$('#actions').innerHTML=`<div class="row"><button class="btn primary" data-act="setup">${T('Nuova partita','New game')}</button></div>`;$('#ticker').innerHTML='';return;}
   const p=cur();
-  now.innerHTML=S.over?'<small>Bandiera a scacchi</small>':`${tok(p)} ${esc(p.name)} <small>· giro ${S.round}${S.limit?'/'+S.limit:''}</small>`;
+  now.innerHTML=S.over?`<small>${T('Bandiera a scacchi','Chequered flag')}</small>`:`${tok(p)} ${esc(p.name)} <small>· ${T('giro','lap')} ${S.round}${S.limit?'/'+S.limit:''}</small>`;
   msg.textContent=S.msg?S.msg.text:'';msg.className='msg '+(S.msg?S.msg.kind:'');
   if(!busy){$('#d1').innerHTML=dieHTML(S.dice[0]);$('#d2').innerHTML=dieHTML(S.dice[1]);}
-  $('#pot').innerHTML=(S.champ?`<span>🏆 Gara ${S.champ.idx+1}/${S.champ.n}</span>`:'')+(S.weekend!=null?`<span>🏁 GP ${SQ[S.weekend].code} ×2</span>`:'')+`<span class="${S.pot>=100?'full':''}">🚨 SC ${fmt(S.pot||0)}</span>`;
+  $('#pot').innerHTML=(S.champ?`<span>🏆 ${T('Gara','Race')} ${S.champ.idx+1}/${S.champ.n}</span>`:'')+(S.weekend!=null?`<span>🏁 GP ${SQ[S.weekend].code} ×2</span>`:'')+`<span class="${S.pot>=100?'full':''}">🚨 SC ${fmt(S.pot||0)}</span>`;
   $('#tower').innerHTML=S.players.map(q=>`<button class="chip ${q===p&&!S.over?'turn':''} ${q.out?'out':''}" data-act="pinfo" data-i="${q.id}">
     ${tok(q)}<span class="nm">${tm(q)?`<span aria-label="${esc(tm(q).n)}">${tm(q).i}</span>`:''}${esc(q.name)}${q.cpu?'<span class="b">🤖</span>':''}${q.stopgo?'<span class="b red">S&amp;G</span>':''}${q.flags?'<span class="b gold">🏁'+q.flags+'</span>':''}${q.loan?'<span class="b red">🦈</span>':''}${S.champ?`<span class="b">${S.champ.pts[q.id]}pt</span>`:''}</span>
     <span class="cash">${q.out?'OUT':fmt(q.cash)}</span></button>`).join('');
@@ -1210,6 +1237,29 @@ const CAR=c=>`<svg viewBox="0 0 24 52" aria-hidden="true">
 <rect x="10.8" y="28.3" width="2.4" height="3.2" rx="1" fill="#16181d"/>
 <rect x="3.8" y="44.8" width="16.4" height="3.6" rx=".8" fill="#16181d"/><rect x="5" y="45.5" width="14" height="1.5" rx=".4" fill="${c}"/>
 <rect x="11" y="48.8" width="2" height="1.7" rx=".4" fill="#ff3347"/></svg>`;
+// Logo Paddock Tycoon: nastro ad arco + carta di proprietà + dadi
+function logoSVG(id='a'){
+  const die=(x,y,r,n)=>{const P={1:[[0,0]],2:[[-1,-1],[1,1]],3:[[-1,-1],[0,0],[1,1]],4:[[-1,-1],[1,-1],[-1,1],[1,1]],5:[[-1,-1],[1,-1],[0,0],[-1,1],[1,1]],6:[[-1,-1],[1,-1],[-1,0],[1,0],[-1,1],[1,1]]};
+    return `<g transform="translate(${x} ${y}) rotate(${r})"><rect x="-26" y="-26" width="52" height="52" rx="11" fill="#fff6dd" stroke="#15171c" stroke-width="5"/>${P[n].map(([a,b])=>`<circle cx="${a*12}" cy="${b*12}" r="5" fill="#e10a1e"/>`).join('')}</g>`;};
+  return `<svg class="brandlogo" viewBox="0 0 640 290" role="img" aria-label="Paddock Tycoon">
+  <defs><path id="pt-arc-${id}" d="M104 164 Q320 80 536 164"/>
+  <pattern id="pt-chk-${id}" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#fff6dd"/><rect width="6" height="6" fill="#15171c"/><rect x="6" y="6" width="6" height="6" fill="#15171c"/></pattern></defs>
+  <g transform="translate(0 6)">
+  <path d="M30 128 L104 116 L104 204 L30 216 L56 172 Z" fill="#9d0010" stroke="#15171c" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M610 128 L536 116 L536 204 L610 216 L584 172 Z" fill="#9d0010" stroke="#15171c" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M78 100 Q320 18 562 100 L562 198 Q320 116 78 198 Z" fill="#e10a1e" stroke="#15171c" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M92 116 Q320 38 548 116" fill="none" stroke="#ff5a69" stroke-width="3" opacity=".7"/>
+  <text font-family="'Alfa Slab One','Rockwell Extra Bold','Rockwell',Georgia,serif" font-size="70" fill="#15171c" text-anchor="middle" letter-spacing="3" transform="translate(4 6)"><textPath href="#pt-arc-${id}" startOffset="50%">PADDOCK</textPath></text>
+  <text font-family="'Alfa Slab One','Rockwell Extra Bold','Rockwell',Georgia,serif" font-size="70" fill="#fff6dd" stroke="#15171c" stroke-width="9" paint-order="stroke" stroke-linejoin="round" text-anchor="middle" letter-spacing="3"><textPath href="#pt-arc-${id}" startOffset="50%">PADDOCK</textPath></text>
+  <g transform="translate(0 2)">
+  <rect x="176" y="186" width="288" height="86" rx="12" fill="#fff6dd" stroke="#15171c" stroke-width="6"/>
+  <path d="M182 192 h276 v14 h-276 z" fill="#e10a1e"/>
+  <rect x="182" y="206" width="16" height="60" fill="url(#pt-chk-${id})"/><rect x="442" y="206" width="16" height="60" fill="url(#pt-chk-${id})"/>
+  <text x="320" y="257" font-family="'Alfa Slab One','Rockwell Extra Bold','Rockwell',Georgia,serif" font-size="42" fill="#15171c" text-anchor="middle" letter-spacing="4">TYCOON</text>
+  </g>
+  ${die(126,246,-16,5)}${die(516,246,14,3)}
+  </g></svg>`;
+}
 const carRot={};
 const rotFor=i=>i<8?-90:i<16?0:i<24?90:180;
 function placeCars(){
@@ -1261,19 +1311,19 @@ function confetti(n=140){
 }
 function renderActions(){
   const a=$('#actions'),p=cur();
-  if(S.over){a.innerHTML=`<div class="row"><button class="btn primary" data-act="setup">Nuova partita</button><button class="btn dark" data-act="results">Classifica</button></div>`;return;}
-  if(p.cpu||S.phase==='auction'){a.innerHTML=`<div class="waitline">${tok(p)} ${esc(p.name)} in pista…</div>`;return;}
+  if(S.over){a.innerHTML=`<div class="row"><button class="btn primary" data-act="setup">${T('Nuova partita','New game')}</button><button class="btn dark" data-act="results">${T('Classifica','Results')}</button></div>`;return;}
+  if(p.cpu||S.phase==='auction'){a.innerHTML=`<div class="waitline">${tok(p)} ${esc(p.name)} ${T('in pista…','is racing…')}</div>`;return;}
   let main='';
-  if(S.phase==='roll') main=`<div class="row"><button class="btn primary" data-act="roll" ${busy?'disabled':''}>🎲 ${busy?'…':(S.doubles>0?'Rilancia':'Lancia')}</button></div>`;
+  if(S.phase==='roll') main=`<div class="row"><button class="btn primary" data-act="roll" ${busy?'disabled':''}>🎲 ${busy?'…':(S.doubles>0?T('Rilancia','Roll again'):T('Lancia','Roll'))}</button></div>`;
   else if(S.phase==='buy'){
     const i=S.pending,sq=SQ[i];
-    main=`<div class="deal" style="--g:${gcol(i)}"><span class="sw"></span><span class="thumb">${sq.t==='c'?trackSVG(i,'mini'):''}</span><div><b>${esc(sq.name)}</b><small>${sq.t==='c'?'Diritti '+fmt(rentTable(sq)[0])+' · '+G[sq.g].n:'Dadi ×5 / ×12'}</small></div><span class="px">${fmt(sq.price)}</span></div>
-      <div class="row"><button class="btn primary" data-act="buy" ${p.cash>=sq.price&&!busy?'':'disabled'}>Compra</button><button class="btn out" data-act="auction" ${busy?'disabled':''}>🔨 Asta</button></div>`;
+    main=`<div class="deal" style="--g:${gcol(i)}"><span class="sw"></span><span class="thumb">${sq.t==='c'?trackSVG(i,'mini'):''}</span><div><b>${esc(sq.name)}</b><small>${sq.t==='c'?T('Diritti ','Fee ')+fmt(rentTable(sq)[0])+' · '+G[sq.g].n:T('Dadi ×5 / ×12','Dice ×5 / ×12')}</small></div><span class="px">${fmt(sq.price)}</span></div>
+      <div class="row"><button class="btn primary" data-act="buy" ${p.cash>=sq.price&&!busy?'':'disabled'}>${T('Compra','Buy')}</button><button class="btn out" data-act="auction" ${busy?'disabled':''}>🔨 ${T('Asta','Auction')}</button></div>`;
   }
-  else if(S.phase==='end') main=`<div class="row"><button class="btn primary" data-act="end" ${busy?'disabled':''}>Fine turno ›</button></div>`;
+  else if(S.phase==='end') main=`<div class="row"><button class="btn primary" data-act="end" ${busy?'disabled':''}>${T('Fine turno','End turn')} ›</button></div>`;
   else main=`<div class="waitline">…</div>`;
   const can=!busy&&['roll','end','buy'].includes(S.phase);
-  a.innerHTML=main+`<div class="row"><button class="btn sm" data-act="manage" ${can?'':'disabled'}>🏟️ Circuiti · ${propsOf(p).length}</button><button class="btn sm" data-act="log">📋 Cronaca</button></div>`;
+  a.innerHTML=main+`<div class="row"><button class="btn sm" data-act="manage" ${can?'':'disabled'}>🏟️ ${T('Circuiti','Circuits')} · ${propsOf(p).length}</button><button class="btn sm" data-act="log">📋 ${T('Cronaca','Race log')}</button></div>`;
 }
 
 // ================= Schede =================
@@ -1281,66 +1331,66 @@ function showInfo(i){
   const sq=SQ[i],o=S&&S.own[i];let h='';
   if(sq.t==='c'){
     const t=rentTable(sq),g=G[sq.g],cl=o&&!o.mort?o.level:-1;
-    const cells=[['Base',t[0],0],['Gruppo',t[0]*2,-2],['1T',t[1],1],['2T',t[2],2],['3T',t[3],3],['GP',t[4],4]];
+    const cells=[['Base',t[0],0],[T('Gruppo','Group'),t[0]*2,-2],['1T',t[1],1],['2T',t[2],2],['3T',t[3],3],['GP',t[4],4]];
     h=`<div class="band" style="--g:${g.c}"></div><h2>${esc(sq.name)}</h2>
-      <div class="trkcard" style="--g:${g.c}">${trackSVG(i,'big')}<span class="trkkm"><b>${sq.km.toFixed(3).replace('.',',')}</b> km</span><span class="trkcc">${esc(sq.country)}</span></div>
-      <div class="facts"><span class="fact">${g.n}</span><span class="fact">Prezzo <b>${fmt(sq.price)}</b></span><span class="fact">Tribuna <b>${fmt(g.up)}</b></span><span class="fact">GP <b>${fmt(g.up*2)}</b></span></div>
+      <div class="trkcard" style="--g:${g.c}">${trackSVG(i,'big')}<span class="trkkm"><b>${T(sq.km.toFixed(3).replace('.',','),sq.km.toFixed(3))}</b> km</span><span class="trkcc">${esc(sq.country)}</span></div>
+      <div class="facts"><span class="fact">${g.n}</span><span class="fact">${T('Prezzo','Price')} <b>${fmt(sq.price)}</b></span><span class="fact">${T('Tribuna','Grandstand')} <b>${fmt(g.up)}</b></span><span class="fact">GP <b>${fmt(g.up*2)}</b></span></div>
       <div class="rt">${cells.map(([l,v,k])=>`<div class="${k===cl?'cur':''}"><small>${l}</small><b>${v}</b></div>`).join('')}</div>`;
-  } else if(sq.t==='u') h=`<h2>${esc(sq.name)}</h2><div class="facts"><span class="fact">Prezzo <b>${fmt(sq.price)}</b></span><span class="fact">Dadi <b>×5</b></span><span class="fact">Entrambi <b>×12</b></span></div>`;
+  } else if(sq.t==='u') h=`<h2>${esc(sq.name)}</h2><div class="facts"><span class="fact">${T('Prezzo','Price')} <b>${fmt(sq.price)}</b></span><span class="fact">${T('Dadi','Dice')} <b>×5</b></span><span class="fact">${T('Entrambi','Both')} <b>×12</b></span></div>`;
   else{
-    const d={go:`+${fmt(LAP_BONUS)} a ogni passaggio`,card:'Pesca un messaggio del muretto',tax:`Paghi ${fmt(sq.amount||0)}`,drs:'Avanzi di 3',pit:'Qui si sconta lo Stop & Go',sc:'Sosta libera',cops:'Stop & Go in Pit Lane'}[sq.t];
+    const d=T({go:`+${fmt(LAP_BONUS)} a ogni passaggio`,card:'Pesca un messaggio del muretto',tax:`Paghi ${fmt(sq.amount||0)}`,drs:'Avanzi di 3',pit:'Qui si sconta lo Stop & Go',sc:'Sosta libera e montepremi',cops:'Stop & Go in Pit Lane'},{go:`+${fmt(LAP_BONUS)} every time you pass`,card:'Draw a message from the pit wall',tax:`Pay ${fmt(sq.amount||0)}`,drs:'Move forward 3',pit:'Stop & Go penalties are served here',sc:'Free parking and jackpot',cops:'Stop & Go in Pit Lane'})[sq.t];
     h=`<h2>${esc(sq.name)}</h2><p>${d}</p>`;
   }
   if(o){
     const facts=[`${tok(P(o.owner))} <b>${esc(P(o.owner).name)}</b>`];
-    if(o.mort) facts.push('Ipotecato');
-    roysOn(i).forEach(r=>facts.push(`🕶️ ${esc(P(r.holder).name)} ${r.pct}% fino al giro ${r.until}`));
+    if(o.mort) facts.push(T('Ipotecato','Mortgaged'));
+    roysOn(i).forEach(r=>facts.push(`🕶️ ${esc(P(r.holder).name)} ${r.pct}% ${T('fino al giro','until lap')} ${r.until}`));
     h+=`<div class="facts">${facts.map(f=>`<span class="fact">${f}</span>`).join('')}</div>`;
     if(S&&!S.over&&!cur().cpu){
       const me=cur(),turnOk=!busy&&['roll','end','buy'].includes(S.phase);
-      if(o.owner===me.id&&turnOk) h+=`<h3>Gestisci</h3><div class="ctl">${ctlButtons(me,i,'info')}</div>`;
+      if(o.owner===me.id&&turnOk) h+=`<h3>${T('Gestisci','Manage')}</h3><div class="ctl">${ctlButtons(me,i,'info')}</div>`;
       else if(o.owner!==me.id&&canTrade()){
         const ok=tradable(P(o.owner)).includes(i);
-        h+=`<div class="row"><button class="btn primary" data-act="tradefor" data-i="${i}" data-o="${o.owner}" ${ok?'':'disabled'}>🤝 Tratta con ${esc(P(o.owner).name)}</button></div>${ok?'':'<p>Ha tribune nel gruppo: prima deve smontarle.</p>'}`;
+        h+=`<div class="row"><button class="btn primary" data-act="tradefor" data-i="${i}" data-o="${o.owner}" ${ok?'':'disabled'}>🤝 ${T('Tratta con','Deal with')} ${esc(P(o.owner).name)}</button></div>${ok?'':`<p>${T('Ha tribune nel gruppo: prima deve smontarle.','The group has grandstands: they must be dismantled first.')}</p>`}`;
       }
     }
   }
-  openSheet(h+`<div class="row"><button class="btn dark" data-act="close">Chiudi</button></div>`);
+  openSheet(h+`<div class="row"><button class="btn dark" data-act="close">${T('Chiudi','Close')}</button></div>`);
 }
 function showPlayer(id){
   const q=P(id),mine=propsOf(q).sort((a,b)=>a-b);
-  const deals=[...(S.roys||[]).filter(r=>r.holder===id).map(r=>`🕶️ ${r.pct}% su ${SQ[r.prop].code} fino al giro ${r.until}`),
-    ...(S.pacts||[]).filter(x=>x.a===id||x.b===id).map(x=>`🤝 Patto con ${esc(P(x.a===id?x.b:x.a).name)} fino al giro ${x.until}`)];
+  const deals=[...(S.roys||[]).filter(r=>r.holder===id).map(r=>`🕶️ ${r.pct}% ${T('su','on')} ${SQ[r.prop].code} ${T('fino al giro','until lap')} ${r.until}`),
+    ...(S.pacts||[]).filter(x=>x.a===id||x.b===id).map(x=>`🤝 ${T('Patto con','Pact with')} ${esc(P(x.a===id?x.b:x.a).name)} ${T('fino al giro','until lap')} ${x.until}`)];
   openSheet(`<h2>${tok(q)} ${esc(q.name)}</h2>
     ${tm(q)?`<div class="facts"><span class="fact">${tm(q).i} <b>${tm(q).n}</b> · ${tm(q).d}</span></div>`:''}
-    <div class="facts"><span class="fact">Cassa <b>${fmt(q.cash)}</b></span>${q.loan?`<span class="fact">🦈 Debito <b>${fmt(q.loan.owe)}</b> · giro ${q.loan.due}</span>`:''}<span class="fact">Patrimonio <b>${fmt(netWorth(q))}</b></span><span class="fact">Diritti/giro ~<b>${fmt(rentPower(q))}</b></span></div>
-    <div class="picks">${mine.map(i=>`<span class="pick ${S.own[i].mort?'mort':''}"><span class="sw" style="--g:${gcol(i)}"></span>${SQ[i].code}${S.own[i].level?' · '+LV_SHORT[S.own[i].level]:''}</span>`).join('')||'<span class="muted">Nessun circuito</span>'}</div>
-    ${deals.length?`<div class="clauses"><h3>Sotto banco</h3>${deals.map(d=>`<div class="cl">${d}</div>`).join('')}</div>`:''}
-    <div class="row">${canTrade()&&!q.out&&q!==cur()?`<button class="btn primary" data-act="tradefor" data-o="${q.id}">🤝 Proponi affare</button>`:''}<button class="btn dark" data-act="close">Chiudi</button></div>`);
+    <div class="facts"><span class="fact">${T('Cassa','Cash')} <b>${fmt(q.cash)}</b></span>${q.loan?`<span class="fact">🦈 ${T('Debito','Debt')} <b>${fmt(q.loan.owe)}</b> · ${T('giro','lap')} ${q.loan.due}</span>`:''}<span class="fact">${T('Patrimonio','Net worth')} <b>${fmt(netWorth(q))}</b></span><span class="fact">${T('Diritti/giro','Fees/lap')} ~<b>${fmt(rentPower(q))}</b></span></div>
+    <div class="picks">${mine.map(i=>`<span class="pick ${S.own[i].mort?'mort':''}"><span class="sw" style="--g:${gcol(i)}"></span>${SQ[i].code}${S.own[i].level?' · '+LV_SHORT[S.own[i].level]:''}</span>`).join('')||`<span class="muted">${T('Nessun circuito','No circuits')}</span>`}</div>
+    ${deals.length?`<div class="clauses"><h3>${T('Sotto banco','Under the table')}</h3>${deals.map(d=>`<div class="cl">${d}</div>`).join('')}</div>`:''}
+    <div class="row">${canTrade()&&!q.out&&q!==cur()?`<button class="btn primary" data-act="tradefor" data-o="${q.id}">🤝 ${T('Proponi affare','Propose a deal')}</button>`:''}<button class="btn dark" data-act="close">${T('Chiudi','Close')}</button></div>`);
 }
 function ctlButtons(p,i,ctx){
   const sq=SQ[i],o=S.own[i];let a='';
-  if(o.mort) return `<button class="btn xs primary" data-act="unmort" data-ctx="${ctx}" data-i="${i}" ${p.cash>=unmortCost(i)?'':'disabled'}>Riscatta −${unmortCost(i)}</button>`;
-  if(sq.t==='c'&&o.level<4&&ownsGroup(p,sq.g)) a+=`<button class="btn xs primary" data-act="up" data-ctx="${ctx}" data-i="${i}" ${canUpgrade(p,i)?'':'disabled'}>+${o.level===3?'GP':'Tribuna'} ${upCost(i)}</button>`;
-  if(o.level>0) a+=`<button class="btn xs dark" data-act="down" data-ctx="${ctx}" data-i="${i}">− Smonta</button>`;
-  if(canMortgage(i)) a+=`<button class="btn xs" data-act="mort" data-ctx="${ctx}" data-i="${i}">Ipoteca +${mortValue(i)}</button>`;
-  return a||'<span class="muted">Completa il gruppo per costruire</span>';
+  if(o.mort) return `<button class="btn xs primary" data-act="unmort" data-ctx="${ctx}" data-i="${i}" ${p.cash>=unmortCost(i)?'':'disabled'}>${T('Riscatta','Unmortgage')} −${unmortCost(i)}</button>`;
+  if(sq.t==='c'&&o.level<4&&ownsGroup(p,sq.g)) a+=`<button class="btn xs primary" data-act="up" data-ctx="${ctx}" data-i="${i}" ${canUpgrade(p,i)?'':'disabled'}>+${o.level===3?'GP':T('Tribuna','Grandstand')} ${upCost(i)}</button>`;
+  if(o.level>0) a+=`<button class="btn xs dark" data-act="down" data-ctx="${ctx}" data-i="${i}">− ${T('Smonta','Dismantle')}</button>`;
+  if(canMortgage(i)) a+=`<button class="btn xs" data-act="mort" data-ctx="${ctx}" data-i="${i}">${T('Ipoteca','Mortgage')} +${mortValue(i)}</button>`;
+  return a||`<span class="muted">${T('Completa il gruppo per costruire','Complete the group to build')}</span>`;
 }
 function showManage(){
   const p=cur(),mine=propsOf(p).sort((a,b)=>a-b);
   const tiles=mine.map(i=>{
     const sq=SQ[i],o=S.own[i],a=ctlButtons(p,i,'manage');
-    return `<div class="tile ${o.mort?'mort':''}" style="--g:${gcol(i)}"><div class="h"><b>${esc(sq.name)}</b><span>${o.mort?'IPO':(sq.t==='c'?LV_SHORT[o.level]:'')} · ${fmt(o.mort?0:rentOf(i))}</span></div><div class="a">${a}</div></div>`;
+    return `<div class="tile ${o.mort?'mort':''}" style="--g:${gcol(i)}"><div class="h"><b>${esc(sq.name)}</b><span>${o.mort?T('IPO','MTG'):(sq.t==='c'?LV_SHORT[o.level]:'')} · ${fmt(o.mort?0:rentOf(i))}</span></div><div class="a">${a}</div></div>`;
   }).join('');
-  openSheet(`<h2>🏟️ I tuoi circuiti <span class="muted" style="font-size:15px;font-style:normal">${fmt(p.cash)}</span></h2>
-    <div class="tiles">${tiles||'<p>Ancora nessuno.</p>'}</div>
-    <div class="clauses"><h3>🦈 Strozzino del paddock</h3>${p.loan
-      ?`<div class="cl">Devi ${fmt(p.loan.owe)} entro il giro ${p.loan.due}. Dopo, riscuote con il 20% di mora.</div><div class="row"><button class="btn sm primary" data-act="repay" ${p.cash>=p.loan.owe?'':'disabled'}>Restituisci ${fmt(p.loan.owe)}</button></div>`
-      :`<div class="cl">Contanti subito. Restituisci il 30% in più entro 3 giri.</div><div class="row">${[100,200,300].map(n=>`<button class="btn sm primary" data-act="loan" data-v="${n}">+${fmt(n)}</button>`).join('')}</div>`}</div>
-    <div class="row"><button class="btn dark" data-act="close">Chiudi</button></div>`);
+  openSheet(`<h2>🏟️ ${T('I tuoi circuiti','Your circuits')} <span class="muted" style="font-size:15px;font-style:normal">${fmt(p.cash)}</span></h2>
+    <div class="tiles">${tiles||`<p>${T('Ancora nessuno.','None yet.')}</p>`}</div>
+    <div class="clauses"><h3>🦈 ${T('Strozzino del paddock','Paddock loan shark')}</h3>${p.loan
+      ?`<div class="cl">${T(`Devi ${fmt(p.loan.owe)} entro il giro ${p.loan.due}. Dopo, riscuote con il 20% di mora.`,`You owe ${fmt(p.loan.owe)} by lap ${p.loan.due}. After that, he collects with a 20% penalty.`)}</div><div class="row"><button class="btn sm primary" data-act="repay" ${p.cash>=p.loan.owe?'':'disabled'}>${T('Restituisci','Repay')} ${fmt(p.loan.owe)}</button></div>`
+      :`<div class="cl">${T('Contanti subito. Restituisci il 30% in più entro 3 giri.','Cash now. Pay back 30% more within 3 laps.')}</div><div class="row">${[100,200,300].map(n=>`<button class="btn sm primary" data-act="loan" data-v="${n}">+${fmt(n)}</button>`).join('')}</div>`}</div>
+    <div class="row"><button class="btn dark" data-act="close">${T('Chiudi','Close')}</button></div>`);
 }
 function showRules(){
-  const R=[['🏎️ Pole position','All\'inizio tutti lanciano i dadi: il più alto parte per primo.'],['🎲 Giro',`2 dadi, +${fmt(LAP_BONUS)} al via. Doppio = rilanci; 3 doppi = Stop & Go.`],
+  const R=T([['🏎️ Pole position','All\'inizio tutti lanciano i dadi: il più alto parte per primo.'],['🎲 Giro',`2 dadi, +${fmt(LAP_BONUS)} al via. Doppio = rilanci; 3 doppi = Stop & Go.`],
     ['🏟️ Circuiti','Compra o manda all\'asta. Gruppo completo = diritti ×2.'],
     ['🏗️ Tribune e GP','Con il gruppo: fino a 3 tribune, poi il Gran Premio.'],
     ['🔨 Aste','Se nessuno compra, tutti rilanciano. Chi passa è fuori.'],
@@ -1354,27 +1404,41 @@ function showRules(){
     ['🏎️ Scuderie','Ogni pilota ha un vantaggio: '+TEAM_IDS.map(k=>TEAMS[k].i+' '+TEAMS[k].n).join(', ')+'.'],
     ['🦈 Strozzino','Nella scheda Circuiti: fino a €300M subito, da restituire +30% entro 3 giri. In ritardo: +20% di mora.'],
     ['🏆 Campionato','3 o 5 gare a giri contati. Punti per l\'ordine d\'arrivo: 25-18-15-12-10-8. L\'ultima gara vale doppio.'],
-    ['🏁 Fine','Ultimo in gara, oppure patrimonio più alto a fine giri.']];
-  openSheet(`<h2>Regolamento</h2><div class="rules">${R.map(([t,d])=>`<div><b>${t}</b>${d}</div>`).join('')}</div><p style="font-size:11px">Tracciati disegnati da dati open source di Tomislav Bacinger (github.com/bacinger/f1-circuits, licenza MIT). Gioco di fantasia: nomi dei circuiti inventati, nessun legame con campionati, squadre o circuiti reali.</p><div class="row"><button class="btn primary" data-act="tutorial">🎓 Tutorial guidato</button><button class="btn dark" data-act="close">Chiudi</button></div>`);
+    ['🏁 Fine','Ultimo in gara, oppure patrimonio più alto a fine giri.']],[['🏎️ Pole position','At the start everyone rolls the dice: the highest starts first.'],['🎲 Lap',`2 dice, +${fmt(LAP_BONUS)} when you pass GO. Double = roll again; 3 doubles = Stop & Go.`],
+    ['🏟️ Circuits','Buy it or send it to auction. Full colour group = fees ×2.'],
+    ['🏗️ Grandstands and GP','With the full group: up to 3 grandstands, then the Grand Prix.'],
+    ['🔨 Auctions','If nobody buys, everyone bids. Whoever passes is out.'],
+    ['🏦 Mortgages','Get 50% now, no fees while mortgaged. Buy back at 55%.'],
+    ['💥 Bankruptcy','Can\'t pay? Dismantle and mortgage. You only lose when nothing is left.'],
+    ['🤝 Deals','Circuits and cash, with chains of counteroffers.'],
+    ['🕶️ Under the table','Sell but keep 10–75% of the fees for 1–3 laps. Non-aggression pacts.'],
+    ['🚦 Stop & Go',`Pay ${fmt(STOPGO_FEE)}, use a Green flag, skip a turn, or try a bribe (50%).`],
+    ['🏁 Weekend GP','Every lap one circuit hosts the GP: fees ×2.'],
+    ['🚨 SC jackpot','Taxes, fines and bribes go into the jackpot: land on the Safety Car to collect it.'],
+    ['🏎️ Teams','Every driver has a perk: '+TEAM_IDS.map(k=>TEAMS[k].i+' '+TEAMS[k].n).join(', ')+'.'],
+    ['🦈 Loan shark','In the Circuits panel: up to €300M now, pay back +30% within 3 laps. Late: +20% penalty.'],
+    ['🏆 Championship','3 or 5 races with a lap limit. Points by finishing order: 25-18-15-12-10-8. The last race counts double.'],
+    ['🏁 Finish','Last driver standing, or highest net worth when the laps run out.']]);
+  openSheet(`<h2>${T('Regolamento','Rules')}</h2><div class="rules">${R.map(([t,d])=>`<div><b>${t}</b>${d}</div>`).join('')}</div><p style="font-size:11px">${T('Tracciati disegnati da dati open source di Tomislav Bacinger (github.com/bacinger/f1-circuits, licenza MIT). Gioco di fantasia: nomi dei circuiti inventati, nessun legame con campionati, squadre o circuiti reali.','Track layouts drawn from open-source data by Tomislav Bacinger (github.com/bacinger/f1-circuits, MIT licence). A work of fiction: circuit names are invented and not affiliated with any real championship, team or circuit.')}</p><div class="row"><button class="btn primary" data-act="tutorial">🎓 ${T('Tutorial guidato','Guided tutorial')}</button><button class="btn dark" data-act="close">${T('Chiudi','Close')}</button></div>`);
 }
-function showLog(){openSheet(`<h2>Direzione gara</h2><ol class="logl">${S.log.map(t=>`<li>${esc(t)}</li>`).join('')}</ol><div class="row"><button class="btn dark" data-act="close">Chiudi</button></div>`);}
+function showLog(){openSheet(`<h2>${T('Direzione gara','Race control')}</h2><ol class="logl">${S.log.map(t=>`<li>${esc(t)}</li>`).join('')}</ol><div class="row"><button class="btn dark" data-act="close">${T('Chiudi','Close')}</button></div>`);}
 function awards(){
   const best=k=>{const p=[...S.players].sort((a,b)=>st(b.id)[k]-st(a.id)[k])[0];return st(p.id)[k]>0?p:null;};
-  const a=[['💰 Re dei diritti','rent',v=>fmt(v)],['🤝 Faccendiere','deals',v=>v+' affari'],['🏗️ Costruttore','built',v=>v+' tribune/GP']]
+  const a=[[T('💰 Re dei diritti','💰 Fee king'),'rent',v=>fmt(v)],[T('🤝 Faccendiere','🤝 Wheeler-dealer'),'deals',v=>v+T(' affari',' deals')],[T('🏗️ Costruttore','🏗️ Builder'),'built',v=>v+T(' tribune/GP',' grandstands/GPs')]]
     .map(([t,k,f])=>{const p=best(k);return p?`<div>${t}<b>${tok(p)} ${esc(p.name)} · ${f(st(p.id)[k])}</b></div>`:'';}).join('');
   return a?`<div class="stats">${a}</div>`:'';
 }
 function niceStep(raw){const p=Math.pow(10,Math.floor(Math.log10(raw)));const n=raw/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p;}
 function chartHTML(){
   const h=S.hist||[];if(h.length<2)return '';
-  const W=440,H=170,L=44,Rr=10,T=10,B=24;
+  const W=440,H=170,L=44,Rr=10,TP=10,B=24;
   const step=niceStep(Math.max(1,...h.flatMap(x=>x.v))/4),top=step*Math.ceil(Math.max(1,...h.flatMap(x=>x.v))/step);
-  const x=k=>L+(W-L-Rr)*k/(h.length-1),y=v=>T+(H-T-B)*(1-v/top);
+  const x=k=>L+(W-L-Rr)*k/(h.length-1),y=v=>TP+(H-TP-B)*(1-v/top);
   let g='';
   for(let v=0;v<=top+1e-9;v+=step) g+=`<line x1="${L}" x2="${W-Rr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${y(v)+3.5}" text-anchor="end" font-size="10" fill="var(--muted)">${v>=1000?(v/1000).toFixed(v%1000?1:0)+'k':v}</text>`;
-  g+=`<text x="${L}" y="${H-6}" font-size="10" fill="var(--muted)">Giro ${h[0].r}</text><text x="${W-Rr}" y="${H-6}" text-anchor="end" font-size="10" fill="var(--muted)">Giro ${h[h.length-1].r}</text>`;
+  g+=`<text x="${L}" y="${H-6}" font-size="10" fill="var(--muted)">${T('Giro','Lap')} ${h[0].r}</text><text x="${W-Rr}" y="${H-6}" text-anchor="end" font-size="10" fill="var(--muted)">${T('Giro','Lap')} ${h[h.length-1].r}</text>`;
   const lines=S.players.map((p,pi)=>`<polyline points="${h.map((e,k)=>x(k).toFixed(1)+','+y(e.v[pi]).toFixed(1)).join(' ')}" fill="none" stroke="${p.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${x(h.length-1)}" cy="${y(h[h.length-1].v[pi])}" r="4" fill="${p.color}" stroke="var(--surface)" stroke-width="2"/>`).join('');
-  return `<div class="nw"><h3>Patrimonio giro per giro</h3><div class="nwbox"><svg viewBox="0 0 ${W} ${H}" id="nwsvg" data-l="${L}" data-r="${Rr}" data-w="${W}" role="img" aria-label="Andamento del patrimonio di ogni pilota">${g}${lines}<line id="nwx" x1="0" x2="0" y1="${T}" y2="${H-B}" stroke="var(--muted)" stroke-width="1" visibility="hidden"/><rect x="${L}" y="${T}" width="${W-L-Rr}" height="${H-T-B}" fill="transparent"/></svg><div class="nwtip" id="nwtip" hidden></div></div>
+  return `<div class="nw"><h3>${T('Patrimonio giro per giro','Net worth lap by lap')}</h3><div class="nwbox"><svg viewBox="0 0 ${W} ${H}" id="nwsvg" data-l="${L}" data-r="${Rr}" data-w="${W}" role="img" aria-label="${T('Andamento del patrimonio di ogni pilota','Net worth of each driver over time')}">${g}${lines}<line id="nwx" x1="0" x2="0" y1="${TP}" y2="${H-B}" stroke="var(--muted)" stroke-width="1" visibility="hidden"/><rect x="${L}" y="${TP}" width="${W-L-Rr}" height="${H-TP-B}" fill="transparent"/></svg><div class="nwtip" id="nwtip" hidden></div></div>
     <div class="legend">${S.players.map(p=>`<span>${tok(p)} ${esc(p.name)}</span>`).join('')}</div></div>`;
 }
 document.addEventListener('pointermove',e=>{
@@ -1384,69 +1448,69 @@ document.addEventListener('pointermove',e=>{
   const vx=(e.clientX-r.left)/r.width*W,k=Math.max(0,Math.min(h.length-1,Math.round((vx-L)/(W-L-Rr)*(h.length-1))));
   const px=L+(W-L-Rr)*k/(h.length-1),ln=$('#nwx');ln.setAttribute('x1',px);ln.setAttribute('x2',px);ln.setAttribute('visibility','visible');
   const rows=S.players.map((p,i)=>[p,h[k].v[i]]).sort((a,b)=>b[1]-a[1]);
-  tip.innerHTML=`<b>Giro ${h[k].r}</b>${rows.map(([p,v])=>`<div>${tok(p)} ${esc(p.name)} <b>${fmt(v)}</b></div>`).join('')}`;
+  tip.innerHTML=`<b>${T('Giro','Lap')} ${h[k].r}</b>${rows.map(([p,v])=>`<div>${tok(p)} ${esc(p.name)} <b>${fmt(v)}</b></div>`).join('')}`;
   tip.hidden=false;const left=px/W*r.width;tip.style.left=(left>r.width/2?left-tip.offsetWidth-10:left+10)+'px';
 });
 function champOrder(c){return S.players.map(p=>p.id).sort((a,b)=>c.pts[b]-c.pts[a]||c.wins[b]-c.wins[a]);}
 function champTable(c){
-  return `<h3>Classifica piloti</h3><div class="rank">${champOrder(c).map((id,k)=>`<div><span class="pos">${k+1}</span><span>${tok(P(id))} ${esc(P(id).name)}${c.wins[id]?` <small class="muted">· ${c.wins[id]} ${c.wins[id]>1?'vittorie':'vittoria'}</small>`:''}</span><b>${c.pts[id]} pt</b></div>`).join('')}</div>`;
+  return `<h3>${T('Classifica piloti','Driver standings')}</h3><div class="rank">${champOrder(c).map((id,k)=>`<div><span class="pos">${k+1}</span><span>${tok(P(id))} ${esc(P(id).name)}${c.wins[id]?` <small class="muted">· ${c.wins[id]} ${c.wins[id]>1?T('vittorie','wins'):T('vittoria','win')}</small>`:''}</span><b>${c.pts[id]} ${T('pt','pts')}</b></div>`).join('')}</div>`;
 }
 function showGameOver(){
   const r=ranking(),c=S.champ;
   if(c){
     const last=c.idx>=c.n-1,lead=P(champOrder(c)[0]);
     if(last&&!S.champFx){S.champFx=true;setTimeout(()=>{confetti(260);sfx('win');},900);}
-    openSheet(`<h2>${last?`🏆 ${esc(lead.name)} campione del mondo!`:`🏁 ${esc(c.names[c.idx])}`}</h2>
-      <h3>Ordine d'arrivo${last?' · punti doppi':''}</h3>
-      <div class="rank">${r.map((p,k)=>`<div><span class="pos">${k+1}</span><span>${tok(p)} ${esc(p.name)}${p.out?' · out':''}</span><b>+${(S.gained||[])[k]||0} pt</b></div>`).join('')}</div>
+    openSheet(`<h2>${last?T(`🏆 ${esc(lead.name)} campione del mondo!`,`🏆 ${esc(lead.name)} is world champion!`):`🏁 ${esc(c.names[c.idx])}`}</h2>
+      <h3>${T("Ordine d'arrivo",'Finishing order')}${last?T(' · punti doppi',' · double points'):''}</h3>
+      <div class="rank">${r.map((p,k)=>`<div><span class="pos">${k+1}</span><span>${tok(p)} ${esc(p.name)}${p.out?' · out':''}</span><b>+${(S.gained||[])[k]||0} ${T('pt','pts')}</b></div>`).join('')}</div>
       ${champTable(c)}
       ${chartHTML()}
       ${awards()}
-      <div class="row">${last?'<button class="btn primary" data-act="setup">Nuovo campionato</button>':`<button class="btn primary" data-act="nextrace">▶ ${esc(c.names[c.idx+1])}</button>`}<button class="btn dark" data-act="home">🏠 Menu</button></div>`);
+      <div class="row">${last?`<button class="btn primary" data-act="setup">${T('Nuovo campionato','New championship')}</button>`:`<button class="btn primary" data-act="nextrace">▶ ${esc(c.names[c.idx+1])}</button>`}<button class="btn dark" data-act="home">🏠 Menu</button></div>`);
     return;
   }
-  openSheet(`<h2>🏁 ${esc(r[0].name)} campione!</h2>
+  openSheet(`<h2>🏁 ${T(`${esc(r[0].name)} campione!`,`${esc(r[0].name)} is the champion!`)}</h2>
     <div class="rank">${r.map((p,k)=>`<div><span class="pos">${k+1}</span><span>${tok(p)} ${esc(p.name)}${p.out?' · out':''}</span><b>${fmt(netWorth(p))}</b></div>`).join('')}</div>
     ${chartHTML()}
     ${awards()}
-    <div class="row"><button class="btn primary" data-act="setup">Rivincita</button><button class="btn dark" data-act="home">🏠 Menu</button></div>`);
+    <div class="row"><button class="btn primary" data-act="setup">${T('Rivincita','Rematch')}</button><button class="btn dark" data-act="home">🏠 Menu</button></div>`);
 }
 
 // ================= Setup =================
-let setup={mode:'single',climit:12,fast:false,diff:'normal',players:[{name:'Tu',cpu:false,color:COLORS[0],team:rndTeam()},{name:'CPU Alfa',cpu:true,color:COLORS[1],team:rndTeam()},{name:'CPU Bravo',cpu:true,color:COLORS[2],team:rndTeam()}],limit:0};
+let setup={mode:'single',climit:12,fast:false,diff:'normal',players:[{name:T('Tu','You'),cpu:false,color:COLORS[0],team:rndTeam()},{name:'CPU Alfa',cpu:true,color:COLORS[1],team:rndTeam()},{name:'CPU Bravo',cpu:true,color:COLORS[2],team:rndTeam()}],limit:0};
 function syncNames(){setup.players.forEach((p,i)=>{const v=$('#pname-'+i);if(v)p.name=v.value;});const l=$('#limit');if(l)setup.limit=+l.dataset.v;}
 function showSetup(){
   const rows=setup.players.map((p,i)=>`<div class="prow">
-    <button class="swatch" style="--pc:${p.color}" data-act="col" data-i="${i}" aria-label="Colore"></button>
-    <input type="text" id="pname-${i}" value="${esc(p.name)}" maxlength="12" aria-label="Nome">
-    <button class="teamc" data-act="team" data-i="${i}" aria-label="Scuderia: ${esc(TEAMS[p.team].n)}">${TEAMS[p.team].i}</button>
+    <button class="swatch" style="--pc:${p.color}" data-act="col" data-i="${i}" aria-label="${T('Colore','Colour')}"></button>
+    <input type="text" id="pname-${i}" value="${esc(p.name)}" maxlength="12" aria-label="${T('Nome','Name')}">
+    <button class="teamc" data-act="team" data-i="${i}" aria-label="${T('Scuderia','Team')}: ${esc(TEAMS[p.team].n)}">${TEAMS[p.team].i}</button>
     <div class="seg"><button class="${p.cpu?'':'on'}" data-act="human" data-i="${i}">👤</button><button class="${p.cpu?'on':''}" data-act="cpu" data-i="${i}">🤖</button></div>
-    <button class="btn xs" data-act="rm" data-i="${i}" ${setup.players.length<=2?'disabled':''} aria-label="Rimuovi">✕</button></div>`).join('');
-  openSheet(`<h2>Griglia di partenza</h2>
+    <button class="btn xs" data-act="rm" data-i="${i}" ${setup.players.length<=2?'disabled':''} aria-label="${T('Rimuovi','Remove')}">✕</button></div>`).join('');
+  openSheet(`<h2>${T('Griglia di partenza','Starting grid')}</h2>
     <div class="seg">${MODES.map(([v,l])=>`<button class="${setup.mode===v?'on':''}" data-act="mode" data-v="${v}">${l}</button>`).join('')}</div>
     <div class="tiles" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${rows}</div>
-    <div class="row"><button class="btn sm" data-act="add" ${setup.players.length>=6?'disabled':''}>+ Pilota</button>
-      <div class="seg">${[[false,'Ritmo normale'],[true,'Veloce']].map(([v,l])=>`<button class="${setup.fast===v?'on':''}" data-act="pace" data-v="${v}">${l}</button>`).join('')}</div>
+    <div class="row"><button class="btn sm" data-act="add" ${setup.players.length>=6?'disabled':''}>+ ${T('Pilota','Driver')}</button>
+      <div class="seg">${[[false,T('Ritmo normale','Normal pace')],[true,T('Veloce','Fast')]].map(([v,l])=>`<button class="${setup.fast===v?'on':''}" data-act="pace" data-v="${v}">${l}</button>`).join('')}</div>
       <div class="seg">${DIFFS.map(([v,l])=>`<button class="${setup.diff===v?'on':''}" data-act="diff" data-v="${v}">${l}</button>`).join('')}</div>
       ${setup.mode==='single'
-        ?`<div class="seg" id="limit" data-v="${setup.limit}">${[[0,'∞ Ultimo in gara'],[15,'15 giri'],[25,'25 giri']].map(([v,l])=>`<button class="${setup.limit==v?'on':''}" data-act="lim" data-v="${v}">${l}</button>`).join('')}</div>`
-        :`<div class="seg">${[8,12,15].map(v=>`<button class="${setup.climit==v?'on':''}" data-act="climit" data-v="${v}">${v} giri a gara</button>`).join('')}</div>`}</div>
+        ?`<div class="seg" id="limit" data-v="${setup.limit}">${[[0,T('∞ Ultimo in gara','∞ Last one standing')],[15,T('15 giri','15 laps')],[25,T('25 giri','25 laps')]].map(([v,l])=>`<button class="${setup.limit==v?'on':''}" data-act="lim" data-v="${v}">${l}</button>`).join('')}</div>`
+        :`<div class="seg">${[8,12,15].map(v=>`<button class="${setup.climit==v?'on':''}" data-act="climit" data-v="${v}">${v} ${T('giri a gara','laps per race')}</button>`).join('')}</div>`}</div>
     <div class="teams">${TEAM_IDS.map(k=>`<span>${TEAMS[k].i} <b>${TEAMS[k].n}</b> ${TEAMS[k].d}</span>`).join('')}</div>
-    <div class="row"><button class="btn primary" data-act="start">🚦 Via!</button>${S&&!S.over?'<button class="btn out" data-act="close">Riprendi</button>':'<button class="btn out" data-act="menu">‹ Menu</button>'}</div>`,!!S);
+    <div class="row"><button class="btn primary" data-act="start">🚦 ${T('Via!','Go!')}</button>${S&&!S.over?`<button class="btn out" data-act="close">${T('Riprendi','Resume')}</button>`:'<button class="btn out" data-act="menu">‹ Menu</button>'}</div>`,!!S);
 }
 async function chooseOrder(){
   const res={};let cont=S.players.map(p=>p.id),tie=false;
   const view=(btn)=>{
     const sums=cont.filter(id=>res[id]).map(id=>res[id][0]+res[id][1]),mx=Math.max(0,...sums);
-    return `<h2>🏎️ Chi parte in pole?</h2>${tie?'<p><b>Pari! Spareggio.</b></p>':''}
+    return `<h2>🏎️ ${T('Chi parte in pole?','Who starts on pole?')}</h2>${tie?`<p><b>${T('Pari! Spareggio.','Tie! Roll-off.')}</b></p>`:''}
       <div class="order">${S.players.map(p=>{const r=res[p.id];const on=r&&cont.includes(p.id)&&r[0]+r[1]===mx;
         return `<div class="${on?'best':''}">${tok(p)}<span>${esc(p.name)}</span><span class="dd">${r?`<span class="die">${dieHTML(r[0])}</span><span class="die">${dieHTML(r[1])}</span>`:'<span class="muted">…</span>'}</span><span class="sum">${r?r[0]+r[1]:''}</span></div>`;}).join('')}</div>${btn}`;
   };
   for(let guard=0;guard<10&&cont.length>1;guard++){
     for(const id of cont){
       const p=P(id);
-      if(p.cpu){openSheet(view(`<div class="waitline">${tok(p)} ${esc(p.name)} lancia…</div>`),false);await wait(550);}
-      else await ask(view(`${handoff(p)}<div class="row"><button class="btn primary" data-choice="roll">🎲 Lancia ${esc(p.name)}</button></div>`));
+      if(p.cpu){openSheet(view(`<div class="waitline">${tok(p)} ${esc(p.name)} ${T('lancia…','is rolling…')}</div>`),false);await wait(550);}
+      else await ask(view(`${handoff(p)}<div class="row"><button class="btn primary" data-choice="roll">🎲 ${T('Lancia','Roll')} ${esc(p.name)}</button></div>`));
       res[id]=[rnd6(),rnd6()];sfx('dice');
       openSheet(view(''),false);await wait(450);
     }
@@ -1457,19 +1521,19 @@ async function chooseOrder(){
   }
   const w=P(cont[0]);
   sfx('engine');
-  const pole=`<div class="pole">${tok(w)} ${esc(w.name)} parte in pole!</div>`;
+  const pole=`<div class="pole">${tok(w)} ${esc(w.name)} ${T('parte in pole!','starts on pole!')}</div>`;
   if(S.players.every(p=>p.cpu)){openSheet(view(pole),false);await wait(1200);}
-  else await ask(view(pole+`<div class="row"><button class="btn primary" data-choice="go">🚦 Semaforo verde</button></div>`));
+  else await ask(view(pole+`<div class="row"><button class="btn primary" data-choice="go">🚦 ${T('Semaforo verde','Lights out')}</button></div>`));
   closeSheet();
   return w.id;
 }
 async function startGame(champ=null){
   hideMenu();musicStop();GEN++;
   syncNames();
-  setup.players.forEach((p,i)=>{p.name=(p.name||'').trim()||`Pilota ${i+1}`;});
+  setup.players.forEach((p,i)=>{p.name=(p.name||'').trim()||`${T('Pilota','Driver')} ${i+1}`;});
   if(!champ&&setup.mode!=='single'){
     const n=setup.mode==='c5'?5:3;
-    const names=shuffle(RACES.filter(r=>r!=='GP Neon Strip')).slice(0,n-1).concat('GP Neon Strip');
+    const names=shuffle(RACES.filter(r=>r!==FINALE)).slice(0,n-1).concat(FINALE);
     champ={n,idx:0,names,pts:setup.players.map(()=>0),wins:setup.players.map(()=>0),limit:setup.climit||12,results:[]};
   }
   S={players:setup.players.map((p,i)=>({id:i,name:p.name,color:p.color,cpu:p.cpu,team:p.team||rndTeam(),cash:START_CASH,pos:0,out:false,stopgo:false,flags:0,loan:null})),
@@ -1480,11 +1544,11 @@ async function startGame(champ=null){
   S.phase='order';
   $('#cars').innerHTML='';for(const k in carRot)delete carRot[k];for(const k in prevCash)delete prevCash[k];
   closeSheet();render();
-  if(champ){sfx('engine');await ask(`<h2>🏆 ${esc(champ.names[champ.idx])}</h2><p>Gara ${champ.idx+1} di ${champ.n} · ${champ.limit} giri${champ.idx===champ.n-1?' · <b>punti doppi</b>':''}</p>${champ.idx?champTable(champ):''}<div class="row"><button class="btn primary" data-choice="go">Allo schieramento</button></div>`);closeSheet();}
+  if(champ){sfx('engine');await ask(`<h2>🏆 ${esc(champ.names[champ.idx])}</h2><p>${T('Gara','Race')} ${champ.idx+1} ${T('di','of')} ${champ.n} · ${champ.limit} ${T('giri','laps')}${champ.idx===champ.n-1?T(' · <b>punti doppi</b>',' · <b>double points</b>'):''}</p>${champ.idx?champTable(champ):''}<div class="row"><button class="btn primary" data-choice="go">${T('Allo schieramento','To the grid')}</button></div>`);closeSheet();}
   if(!tutDone()) await tutorial();
   const w=await chooseOrder();
   S.first=S.turn=w;S.phase='roll';recordHist();
-  log('Semaforo verde!');pickWeekend();sfx('engine');startTurn();
+  log(T('Semaforo verde!','Lights out!'));pickWeekend();sfx('engine');startTurn();
 }
 
 // ================= Menu principale e pausa =================
@@ -1493,13 +1557,14 @@ function showMenu(){
   const ids=SQ.map((q,i)=>i).filter(i=>SQ[i].t==='c'),band=ids.map(i=>`<span>${trackSVG(i,'mini')}<small>${SQ[i].code}</small></span>`).join('');
   const who=can?sv.players.filter(p=>!p.out).map(p=>`<span class="tk" style="--pc:${p.color}"></span>`).join(''):'';
   $('#menu').innerHTML=`<button class="btn sm mmusic" id="musicbtn" data-act="music" aria-pressed="true">🎵 Musica</button><div class="mcard">
-    <div class="mhero"><div class="mcar">${CAR('#e10a1e')}</div><div><div class="mlogo">Paddock <b>Tycoon</b></div><p class="mtag">Compra circuiti, tratta sotto banco, vinci il campionato.</p></div></div>
+    <div class="mhero2">${logoSVG('menu')}<p class="mtag">${T('Compra circuiti, tratta sotto banco, vinci il campionato.','Buy circuits, deal under the table, win the championship.')}</p></div>
     <div class="mbtns">
-      ${can?`<button class="btn primary mbig" data-act="resume">▶ Continua <small>${sv.champ?esc(sv.champ.names[sv.champ.idx])+' · ':''}giro ${sv.round} ${who}</small></button>`:''}
-      <button class="btn ${can?'dark':'primary mbig'}" data-act="newsingle">🏁 Partita veloce</button>
-      <button class="btn dark" data-act="newchamp">🏆 Campionato</button>
-      <button class="btn" data-act="learn">🎓 Impara a giocare</button>
-      <button class="btn" data-act="rules">📖 Regolamento</button>
+      ${can?`<button class="btn primary mbig" data-act="resume">▶ ${T('Continua','Continue')} <small>${sv.champ?esc(sv.champ.names[sv.champ.idx])+' · ':''}${T('giro','lap')} ${sv.round} ${who}</small></button>`:''}
+      <button class="btn ${can?'dark':'primary mbig'}" data-act="newsingle">🏁 ${T('Partita veloce','Quick game')}</button>
+      <button class="btn dark" data-act="newchamp">🏆 ${T('Campionato','Championship')}</button>
+      <button class="btn" data-act="learn">🎓 ${T('Impara a giocare','How to play')}</button>
+      <button class="btn" data-act="rules">📖 ${T('Regolamento','Rules')}</button>
+      <button class="btn" data-act="lang">${T('🇬🇧 English','🇮🇹 Italiano')}</button>
     </div></div>
     <div class="marq" aria-hidden="true"><div class="mrow">${band}${band}</div></div>`;
   $('#menu').hidden=false;
@@ -1508,18 +1573,18 @@ function showMenu(){
 function hideMenu(){$('#menu').hidden=true;}
 function showPause(){
   if(!S){showMenu();return;}
-  openSheet(`<h2>⏸️ Pausa</h2>
+  openSheet(`<h2>⏸️ ${T('Pausa','Paused')}</h2>
     <div class="plist">
-      <button class="btn primary" data-act="close">▶ Riprendi</button>
-      <button class="btn" data-act="rules">📖 Regolamento</button>
+      <button class="btn primary" data-act="close">▶ ${T('Riprendi','Resume')}</button>
+      <button class="btn" data-act="rules">📖 ${T('Regolamento','Rules')}</button>
       <button class="btn" data-act="tutorial">🎓 Tutorial</button>
-      <button class="btn dark" data-act="tomenu">🏠 Menu principale <small>la partita resta salvata</small></button>
-      <button class="btn out" data-act="abandon">🏳️ Abbandona partita</button>
+      <button class="btn dark" data-act="tomenu">🏠 ${T('Menu principale','Main menu')} <small>${T('la partita resta salvata','your game stays saved')}</small></button>
+      <button class="btn out" data-act="abandon">🏳️ ${T('Abbandona partita','Abandon game')}</button>
     </div>`);
 }
 function confirmAbandon(){
-  openSheet(`<h2>🏳️ Abbandonare la partita?</h2><p>${S&&S.champ?'Anche il campionato in corso verrà cancellato.':'La partita verrà cancellata.'} Non potrai riprenderla.</p>
-    <div class="row"><button class="btn primary" data-act="doabandon">Sì, abbandona</button><button class="btn out" data-act="pause">Annulla</button></div>`);
+  openSheet(`<h2>🏳️ ${T('Abbandonare la partita?','Abandon the game?')}</h2><p>${S&&S.champ?T('Anche il campionato in corso verrà cancellato.','The current championship will be deleted too.'):T('La partita verrà cancellata.','The game will be deleted.')} ${T('Non potrai riprenderla.',"You won't be able to resume it.")}</p>
+    <div class="row"><button class="btn primary" data-act="doabandon">${T('Sì, abbandona','Yes, abandon')}</button><button class="btn out" data-act="pause">${T('Annulla','Cancel')}</button></div>`);
 }
 function quitToMenu(discard){
   GEN++;busy=false;cpuActive=false;choice=null;trResolve=null;TR=null;
@@ -1548,7 +1613,7 @@ function resumeSaved(){
 // ================= Tutorial =================
 const TUT_KEY='paddock-tycoon-tutorial';
 const tutDone=()=>{try{return localStorage.getItem(TUT_KEY)==='1';}catch(e){return true;}};
-const TUT=[
+const TUT_IT=[
   ['#board','🏁 Benvenuto in pista','Il tabellone è un circuito di 32 caselle. Le monoposto girano in senso antiorario; a ogni passaggio dal Semaforo Verde incassi €150M.'],
   ['.dice','🎲 I dadi','Tocca Lancia per muoverti. Con un doppio rilanci, ma al terzo doppio di fila prendi uno Stop & Go.'],
   ['#c22','🏟️ I circuiti','Tocca un circuito per vedere prezzo e diritti. Se ti fermi su uno libero puoi comprarlo o mandarlo all\'asta.'],
@@ -1559,6 +1624,17 @@ const TUT=[
   ['#tab','🤝 Affari','Apri la tendina per trattare con gli avversari: soldi, circuiti, controfferte e accordi sotto banco.'],
   [null,'🚦 Pronto?','Se finisci i soldi puoi ipotecare e smontare; perdi solo quando non ti resta nulla. Buona gara!'],
 ];
+const TUT=T(TUT_IT,[
+  ['#board','🏁 Welcome to the track','The board is a 32-space circuit. Cars race anticlockwise; every time you pass Green Light you collect €150M.'],
+  ['.dice','🎲 The dice','Tap Roll to move. Roll a double and you go again, but three doubles in a row earn a Stop & Go.'],
+  ['#c22','🏟️ Circuits','Tap a circuit to see its price and fees. Land on a free one and you can buy it or send it to auction.'],
+  ['#c1','🎨 Colour groups','Own every circuit of one colour? Fees double and you can build grandstands, then the Grand Prix.'],
+  ['#tower','🏎️ Drivers','Each driver\'s cash and team. Tap one to see their circuits and propose a deal.'],
+  ['#actions','🕹️ Controls','Roll, buy, auction and end your turn here. Under “Circuits” you manage grandstands, mortgages and the loan shark.'],
+  ['#pot','🚨 Lap events','Each lap a Weekend GP pays double fees. Taxes and fines fill the jackpot: land on the Safety Car to collect it.'],
+  ['#tab','🤝 Deals','Open the drawer to trade with rivals: cash, circuits, counteroffers and under-the-table deals.'],
+  [null,'🚦 Ready?','Out of cash? Mortgage and dismantle; you only lose when nothing is left. Good luck!'],
+]);
 function tutorial(){
   return new Promise(res=>{
     let k=0;const ov=document.createElement('div');ov.className='coach';document.body.appendChild(ov);
@@ -1577,7 +1653,7 @@ function tutorial(){
       }else spot='<div class="spot none"></div>';
       ov.innerHTML=`${spot}<div class="bubble" style="left:${bx}px;top:${by}px;width:${bw}px" role="dialog" aria-live="polite">
         <div class="tstep">${k+1} / ${TUT.length}</div><b>${t}</b><p>${d}</p>
-        <div class="row"><button class="btn sm out" data-tut="skip">Salta</button><button class="btn sm primary" data-tut="next">${k===TUT.length-1?'Via!':'Avanti'}</button></div></div>`;
+        <div class="row"><button class="btn sm out" data-tut="skip">${T('Salta','Skip')}</button><button class="btn sm primary" data-tut="next">${k===TUT.length-1?T('Via!','Go!'):T('Avanti','Next')}</button></div></div>`;
       const nb=ov.querySelector('[data-tut=next]');nb&&nb.focus({preventScroll:true});
     }
     ov.addEventListener('click',e=>{const b=e.target.closest('[data-tut]');if(!b)return;e.stopPropagation();
@@ -1610,20 +1686,21 @@ const ACT={
   mort:b=>{const i=+b.dataset.i;if(canMortgage(i)&&S.own[i].owner===cur().id){mortgage(i);after(b);}},
   unmort:b=>{const i=+b.dataset.i;if(S.own[i]&&S.own[i].owner===cur().id){unmortgage(i);after(b);}},
   trade:()=>startTrade(),
-  loan:b=>{const p=cur();if(p.loan||p.cpu)return;const n=+b.dataset.v;p.cash+=n;p.loan={owe:Math.round(n*1.3),due:S.round+3};sfx('coin');log(`🦈 ${p.name} prende ${fmt(n)} dallo strozzino`);save();render();showManage();},
-  repay:()=>{const p=cur();if(!p.loan||p.cash<p.loan.owe)return;p.cash-=p.loan.owe;log(`${p.name} salda lo strozzino (${fmt(p.loan.owe)})`);p.loan=null;sfx('pay');save();render();showManage();},
+  loan:b=>{const p=cur();if(p.loan||p.cpu)return;const n=+b.dataset.v;p.cash+=n;p.loan={owe:Math.round(n*1.3),due:S.round+3};sfx('coin');log(T(`🦈 ${p.name} prende ${fmt(n)} dallo strozzino`,`🦈 ${p.name} borrows ${fmt(n)} from the loan shark`));save();render();showManage();},
+  repay:()=>{const p=cur();if(!p.loan||p.cash<p.loan.owe)return;p.cash-=p.loan.owe;log(T(`${p.name} salda lo strozzino (${fmt(p.loan.owe)})`,`${p.name} pays off the loan shark (${fmt(p.loan.owe)})`));p.loan=null;sfx('pay');save();render();showManage();},
   team:b=>{syncNames();const p=setup.players[+b.dataset.i];p.team=TEAM_IDS[(TEAM_IDS.indexOf(p.team)+1)%TEAM_IDS.length];showSetup();},
   diff:b=>{syncNames();setup.diff=b.dataset.v;showSetup();},
   mode:b=>{syncNames();setup.mode=b.dataset.v;showSetup();},
   climit:b=>{syncNames();setup.climit=+b.dataset.v;showSetup();},
   nextrace:()=>{const c=S.champ;if(!c||c.idx>=c.n-1)return;c.idx++;startGame(c);},
   tutorial:()=>{closeSheet();tutorial();},
+  lang:()=>{try{localStorage.setItem(LANG_KEY,LANG==='en'?'it':'en');}catch(e){}if(S&&!S.over)save();location.reload();},
   tradefor:b=>{closeSheet();startTrade({to:+b.dataset.o,get:b.dataset.i!==undefined?[+b.dataset.i]:[]});},
   'tr-to':b=>{readSelects();TR.o.to=+b.dataset.i;TR.o.get=[];TR.o.cashGet=0;paintEditor();},
   'tr-pick':b=>{readSelects();const a=TR.o[b.dataset.side],i=+b.dataset.i,k=a.indexOf(i);if(k>=0)a.splice(k,1);else a.push(i);paintEditor();},
   'tr-cash':b=>{readSelects();const o=TR.o,k=b.dataset.k,max=k==='cashGive'?P(o.from).cash:P(o.to).cash;o[k]=Math.max(0,Math.min(max,o[k]+ +b.dataset.d));paintEditor();},
   'tr-send':()=>{readSelects();const o=TR.o;delete o.line;
-    if(!(o.give.length||o.get.length||o.cashGive||o.cashGet||o.pact)) return paintEditor('Scegli almeno qualcosa.');
+    if(!(o.give.length||o.get.length||o.cashGive||o.cashGet||o.pact)) return paintEditor(T('Scegli almeno qualcosa.','Pick at least one thing.'));
     const r=trResolve;trResolve=null;closeSheet();r({...o});},
   'tr-cancel':()=>{const r=trResolve;trResolve=null;closeSheet();r(null);},
   add:()=>{syncNames();const used=setup.players.map(p=>p.color);setup.players.push({name:'CPU '+['Alfa','Bravo','Charlie','Delta','Echo','Fox'][setup.players.length],cpu:true,color:COLORS.find(c=>!used.includes(c)),team:rndTeam()});showSetup();},
@@ -1635,7 +1712,7 @@ const ACT={
   col:b=>{syncNames();const p=setup.players[+b.dataset.i],used=setup.players.map(x=>x.color);let k=COLORS.indexOf(p.color);for(let n=0;n<6;n++){k=(k+1)%6;if(!used.includes(COLORS[k]))break;}p.color=COLORS[k];showSetup();},
 };
 function after(b){save();render();if(b.dataset.ctx==='info')showInfo(+b.dataset.i);else showManage();}
-const NO_GAME_OK=['music','pause','home','menu','tomenu','abandon','doabandon','resume','newsingle','newchamp','learn','fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info','team','diff','mode','climit','tutorial'];
+const NO_GAME_OK=['lang','music','pause','home','menu','tomenu','abandon','doabandon','resume','newsingle','newchamp','learn','fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info','team','diff','mode','climit','tutorial'];
 document.addEventListener('pointerdown',()=>{MUSIC.unlockedAt=performance.now();ac();setTimeout(musicStart,30);},{once:true});
 document.addEventListener('click',e=>{
   const c=e.target.closest('[data-choice]');
@@ -1659,7 +1736,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 
 // ================= Avvio =================
 function boot(){
-  paintSound();buildBoard();render();showMenu();
+  applyStatic();paintSound();buildBoard();render();showMenu();
 }
 function bootOld(){
   const saved=loadSaved();

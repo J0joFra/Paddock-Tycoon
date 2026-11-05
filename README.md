@@ -5,6 +5,8 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 
 ## Come si gioca
 
+- **Italiano e inglese**: la lingua segue quella del telefono e si cambia dal menu principale.
+
 - **Menu principale** con Continua, Partita veloce, Campionato, Impara a giocare e Regolamento; in partita il pulsante ≡ apre la pausa per tornare al menu (la partita resta salvata) o abbandonarla.
 
 - **Pole position**: all'inizio ognuno lancia i dadi, il punteggio più alto parte per primo (con spareggio).
@@ -61,5 +63,6 @@ e bloccato in orizzontale grazie a `manifest.webmanifest`. In verticale il gioco
 
 ## Crediti
 
+Il logo usa il carattere Alfa Slab One (SIL Open Font License, © The Alfa Slab One Project Authors).
 I tracciati sono generati dai dati open source di [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits)
 (licenza MIT, © 2019-2025 Tomislav Bacinger). Paddock Tycoon è un gioco di fantasia: i nomi di circuiti, squadre ed eventi sono inventati e non hanno legami con campionati, squadre o circuiti reali.
