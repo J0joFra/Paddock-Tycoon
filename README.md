@@ -5,6 +5,8 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 
 ## Come si gioca
 
+- **Menu principale** con Continua, Partita veloce, Campionato, Impara a giocare e Regolamento; in partita il pulsante ≡ apre la pausa per tornare al menu (la partita resta salvata) o abbandonarla.
+
 - **Pole position**: all'inizio ognuno lancia i dadi, il punteggio più alto parte per primo (con spareggio).
 
 - Da 2 a 6 giocatori, umani o CPU, sullo stesso telefono.
@@ -21,7 +23,7 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
   patto di non belligeranza. Allo Stop & Go puoi tentare la bustarella ai commissari (50% di riuscita).
 - **GP del weekend**: a ogni giro un circuito a caso ospita il Gran Premio e i suoi diritti raddoppiano.
 - **Montepremi Safety Car**: tasse, multe e bustarelle finiscono nel montepremi; chi si ferma sulla Safety Car lo incassa.
-- Monoposto animate sul tabellone, banner di turno, importi volanti, coriandoli, vibrazione e premi a fine partita.
+- Monoposto dettagliate (ala con paratie, sospensioni, pance, halo, casco) animate sul tabellone, banner di turno, importi volanti, coriandoli, vibrazione e premi a fine partita.
 - La pista occupa tutto lo schermo e la plancia di gioco sta dentro il circuito.
 - Tendina **Affari** sul bordo destro; toccando un GP di un avversario puoi trattarlo subito, toccando un tuo GP lo gestisci.
 - **Campionato**: 3 o 5 gare da 8, 12 o 15 giri, con punti F1 (25-18-15-12-10-8) e ultima gara a punti doppi. Tra una gara e l'altra: ordine d'arrivo e classifica piloti.
