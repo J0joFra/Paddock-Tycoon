@@ -5,6 +5,8 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 
 ## Come si gioca
 
+- **Pole position**: all'inizio ognuno lancia i dadi, il punteggio più alto parte per primo (con spareggio).
+
 - Da 2 a 6 giocatori, umani o CPU, sullo stesso telefono.
 - Si parte con €1400M; ogni passaggio dal **Semaforo Verde** vale €150M.
 - 18 circuiti in 6 gruppi di colore, da Miami (€60M) a Monaco (€380M).
@@ -17,6 +19,10 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 - **Affari con controfferte**: proponi circuiti e denaro; chi riceve può accettare, rifiutare o rilanciare con una controfferta.
 - **Sotto banco**: cedi un circuito ma tieni dal 10% al 75% dei suoi diritti per 1–3 giri, oppure stringi un
   patto di non belligeranza. Allo Stop & Go puoi tentare la bustarella ai commissari (50% di riuscita).
+- **GP del weekend**: a ogni giro un circuito a caso ospita il Gran Premio e i suoi diritti raddoppiano.
+- **Montepremi Safety Car**: tasse, multe e bustarelle finiscono nel montepremi; chi si ferma sulla Safety Car lo incassa.
+- Monoposto animate sul tabellone, banner di turno, importi volanti, coriandoli, vibrazione e premi a fine partita.
+- Ritmo normale o veloce, scelto nella griglia di partenza.
 - Effetti sonori sintetizzati, disattivabili con l'icona dell'altoparlante.
 - Vince l'ultimo in gara, oppure il patrimonio più alto dopo 15 o 25 giri.
 - La partita si salva automaticamente nel browser.

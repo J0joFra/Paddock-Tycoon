@@ -54,7 +54,7 @@ button{font:inherit;color:inherit}
 .chip .tk{grid-row:span 2;width:14px}
 .chip .nm{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;gap:4px;align-items:center;min-width:0}
 .chip .cash{font-weight:900;font-size:17px;font-variant-numeric:tabular-nums;line-height:1.05}
-.chip.now{border-color:var(--red);box-shadow:0 0 0 2px rgba(225,10,30,.15)}
+.chip.turn{border-color:var(--red);box-shadow:0 0 0 2px rgba(225,10,30,.15)}
 .chip.out{opacity:.35}
 .b{font-size:9px;font-weight:700;letter-spacing:.06em;padding:0 4px;border-radius:3px;background:var(--surface-2);color:var(--muted);flex:none;line-height:1.6}
 .b.red{background:var(--red);color:var(--on-red)}
@@ -218,6 +218,40 @@ button{font:inherit;color:inherit}
   .rotate .phone::after{content:"";position:absolute;left:50%;bottom:5px;width:10px;height:3px;margin-left:-5px;background:var(--red);border-radius:2px}
   @keyframes turn{0%,25%{transform:rotate(0)}55%,100%{transform:rotate(-90deg)}}
 }
+/* Monoposto, effetti, partenza */
+.board{position:relative}
+.cars{position:absolute;inset:0;pointer-events:none;z-index:3}
+.car{position:absolute;left:0;top:0;width:var(--car,14px);height:calc(var(--car,14px)*1.7);margin-left:calc(var(--car,14px)/-2);margin-top:calc(var(--car,14px)*-.85);transition:transform .14s linear;filter:drop-shadow(0 1.5px 1.5px rgba(21,23,28,.35))}
+.car svg{width:100%;height:100%;display:block}
+.car.me{z-index:2;filter:drop-shadow(0 0 3px var(--gold)) drop-shadow(0 0 2px var(--gold)) drop-shadow(0 1.5px 1.5px rgba(21,23,28,.35))}
+.cell .ic{width:1.8em;height:1.8em;flex:none}
+.cell .ic+span{font-size:.72em}
+.cell .drs{background:var(--green);color:#fff;padding:1px 4px;border-radius:3px}
+.cell.wk::after{content:"";position:absolute;top:2px;right:2px;width:1em;height:1em;background:repeating-conic-gradient(var(--ink) 0 25%,#fff 0 50%) 0 0/.5em .5em;border-radius:2px;box-shadow:0 0 0 1px var(--ink);animation:flag 1.1s ease-in-out infinite}
+@keyframes flag{50%{transform:rotate(-14deg) scale(1.15)}}
+.pot{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.pot span{font-size:clamp(9px,2.3vw,12px);font-weight:700;background:var(--surface-2);border-radius:20px;padding:1px 9px;white-space:nowrap}
+.pot span.full{background:var(--gold)}
+.banner{position:absolute;left:0;right:0;top:50%;z-index:5;margin-top:-26px;pointer-events:none;display:flex;justify-content:center;overflow:hidden}
+.banner div{background:var(--pc);color:#fff;font-weight:900;font-style:italic;font-size:clamp(18px,5vw,30px);padding:4px 30px;box-shadow:0 8px 24px rgba(21,23,28,.25);animation:banner 1.15s ease-in-out forwards;white-space:nowrap;opacity:0}
+@keyframes banner{0%{transform:translateX(-110%) skewX(-12deg);opacity:1}22%,72%{transform:translateX(0) skewX(-12deg);opacity:1}100%{transform:translateX(110%) skewX(-12deg);opacity:0}}
+.fx{position:fixed;inset:0;pointer-events:none;z-index:60}
+.float{position:fixed;font-weight:900;font-size:16px;animation:float 1.3s ease-out forwards;text-shadow:0 1px 0 #fff,0 0 6px #fff}
+.float.plus{color:var(--green)}
+.float.minus{color:var(--red)}
+@keyframes float{from{transform:translateY(0);opacity:1}to{transform:translateY(-34px);opacity:0}}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:70;width:100%;height:100%}
+.chip{position:relative}
+.order{display:grid;gap:6px}
+.order>div{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;background:var(--surface-2);border-radius:10px;padding:6px 10px;font-weight:700}
+.order .dd{display:flex;gap:5px}
+.order .die{width:30px;box-shadow:0 2px 0 var(--red-deep)}
+.order .best{background:#ffe9eb;box-shadow:inset 0 0 0 2px var(--red)}
+.order .sum{font-weight:900;font-size:18px;min-width:2ch;text-align:right;font-variant-numeric:tabular-nums}
+.pole{display:flex;align-items:center;gap:10px;font-weight:900;font-style:italic;font-size:22px}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px}
+.stats div{background:var(--surface-2);border-radius:10px;padding:6px 10px;font-size:12px;color:var(--muted);font-weight:700}
+.stats b{display:block;color:var(--ink);font-size:14px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -246,12 +280,15 @@ button{font:inherit;color:inherit}
   <button class="btn primary" data-act="fullscreen">Gioca in orizzontale</button>
 </div>
 
+<div class="fx" id="fx"></div>
+<canvas id="confetti" hidden></canvas>
+
 <div class="backdrop" id="backdrop" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 
 <script>
 // ================= Dati =================
 const START_CASH=1400, LAP_BONUS=150, STOPGO_FEE=50, BRIBE=100;
-const KEY='paddock-tycoon-v2', MUTE_KEY='paddock-tycoon-muted';
+const KEY='paddock-tycoon-v3', MUTE_KEY='paddock-tycoon-muted';
 const G={
   g1:{n:'Nuovi Orizzonti',c:'#14b8a6',up:50},
   g2:{n:'Deserto',c:'#f97316',up:60},
@@ -318,7 +355,7 @@ const CARDS=[
 // ================= Stato e utilità =================
 let S=null, busy=false, cpuActive=false;
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const wait=ms=>new Promise(r=>setTimeout(r,reduced?ms*.35:ms));
+const wait=ms=>new Promise(r=>setTimeout(r,ms*(reduced?.35:1)*(S&&S.fast?.45:1)));
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>'€'+n+'M';
@@ -383,7 +420,12 @@ const SFX={
   win:()=>arp([523,659,784,1047,784,1047,1319],.12,'square',.07),
   engine:()=>tone(90,.5,'sawtooth',.05,0,240),
 };
-function sfx(n){ if(!muted && SFX[n]) try{SFX[n]();}catch(e){} }
+const VIB={dice:12,pay:25,bankrupt:[70,40,70],gavel:18,siren:[30,40,30],buy:15,win:[40,30,40,30,80]};
+function sfx(n){
+  if(muted) return;
+  if(SFX[n]) try{SFX[n]();}catch(e){}
+  if(VIB[n]&&navigator.vibrate) try{navigator.vibrate(VIB[n]);}catch(e){}
+}
 const ICON_ON='<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19.5 5.5a9 9 0 0 1 0 13" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
 const ICON_OFF='<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
 const ICON_LOG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>';
@@ -404,11 +446,17 @@ function rentOf(i){
   if(o.mort) return 0;
   if(sq.t==='u'){const n=propsOf(owner).filter(j=>SQ[j].t==='u'&&!S.own[j].mort).length;return (S.dice[0]+S.dice[1])*(n===2?12:5);}
   const t=rentTable(sq);
-  if(o.level===0) return ownsGroup(owner,sq.g)?t[0]*2:t[0];
-  return t[o.level];
+  const r=o.level===0?(ownsGroup(owner,sq.g)?t[0]*2:t[0]):t[o.level];
+  return S.weekend===i?r*2:r;
 }
+function pickWeekend(){
+  const cs=SQ.map((s,i)=>i).filter(i=>SQ[i].t==='c');
+  S.weekend=cs[Math.floor(Math.random()*cs.length)];
+  log(`🏁 GP del weekend: ${SQ[S.weekend].name} · diritti ×2`);
+}
+const st=id=>(S.stats=S.stats||{})[id]||(S.stats[id]={rent:0,deals:0,built:0});
 function canUpgrade(p,i){const sq=SQ[i],o=S.own[i];return sq.t==='c'&&o&&o.owner===p.id&&o.level<4&&ownsGroup(p,sq.g)&&!groupHasMort(sq.g)&&p.cash>=upCost(i);}
-function upgrade(i){const p=P(S.own[i].owner),c=upCost(i);p.cash-=c;S.own[i].level++;sfx('build');log(`${p.name}: ${S.own[i].level===4?'GP':'tribuna'} a ${SQ[i].name} (−${fmt(c)})`);}
+function upgrade(i){const p=P(S.own[i].owner),c=upCost(i);p.cash-=c;S.own[i].level++;st(p.id).built++;sfx('build');log(`${p.name}: ${S.own[i].level===4?'GP':'tribuna'} a ${SQ[i].name} (−${fmt(c)})`);}
 function sellUpgrade(i){const o=S.own[i],p=P(o.owner),c=o.level===4?G[SQ[i].g].up*2:G[SQ[i].g].up,b=Math.floor(c/2);o.level--;p.cash+=b;sfx('coin');log(`${p.name} smonta a ${SQ[i].name} (+${fmt(b)})`);}
 function canMortgage(i){const o=S.own[i];return o&&!o.mort&&o.level===0&&(SQ[i].t==='u'||!groupHasUpgrades(SQ[i].g));}
 function mortgage(i){const o=S.own[i],p=P(o.owner);o.mort=true;p.cash+=mortValue(i);sfx('coin');log(`${p.name} ipoteca ${SQ[i].name} (+${fmt(mortValue(i))})`);}
@@ -430,7 +478,7 @@ async function pay(p,amt,creditor,why){
     if(p.cpu) autoRaise(p,amt); else await debtScreen(p,amt,creditor,why);
   }
   if(p.cash<amt){await bankrupt(p,creditor);return false;}
-  p.cash-=amt; if(creditor) creditor.cash+=amt;
+  p.cash-=amt; if(creditor) creditor.cash+=amt; else S.pot=(S.pot||0)+amt;
   sfx('pay'); log(`${p.name} −${fmt(amt)}${creditor?' → '+creditor.name:''} · ${why}`);
   return true;
 }
@@ -451,7 +499,7 @@ function endGame(){
   S.over=true;S.phase='over';
   const w=ranking()[0];
   setMsg(`🏁 ${w.name} campione!`,'good');log(`Bandiera a scacchi: vince ${w.name}`);
-  sfx('win');save();render();showGameOver();
+  sfx('win');save();render();confetti(220);showGameOver();
 }
 
 // ================= Fogli (modali) =================
@@ -509,8 +557,9 @@ async function resolve(p){
     if(o.mort){setMsg(`${sq.code} ipotecato: gratis`,'good');return;}
     if(pactActive(p.id,owner.id)){setMsg(`🤝 Patto con ${owner.name}: gratis`,'good');log(`${p.name} non paga ${owner.name} (patto)`);return;}
     const r=rentOf(p.pos);
-    setMsg(`Diritti ${fmt(r)} → ${owner.name}`,'warn');render();
+    setMsg(`${S.weekend===p.pos?'🏁 GP! ':''}Diritti ${fmt(r)} → ${owner.name}`,'warn');render();
     const ok=await pay(p,r,owner,`diritti ${sq.name}`);
+    if(ok) st(owner.id).rent+=r;
     if(ok) for(const ry of roysOn(p.pos)){
       const h=P(ry.holder); if(h.out||ry.holder===owner.id) continue;
       const cut=Math.floor(r*ry.pct/100); if(cut<=0) continue;
@@ -525,7 +574,10 @@ async function resolve(p){
     case 'drs':setMsg('DRS aperto: +3','good');sfx('engine');render();await wait(500);await moveSteps(p,3);return resolve(p);
     case 'cops':return stopGo(p,'Commissari FIA · Stop & Go');
     case 'pit':setMsg('Transito in Pit Lane');return;
-    case 'sc':setMsg('Safety Car: sosta libera');return;
+    case 'sc':
+      if(S.pot>0){const w=S.pot;S.pot=0;gain(p,w);setMsg(`🚨 Montepremi Safety Car: +${fmt(w)}`,'good');log(`${p.name} incassa il montepremi (${fmt(w)})`);render();if(w>=150)confetti(90);}
+      else setMsg('Safety Car: montepremi vuoto');
+      return;
     case 'go':setMsg('Semaforo Verde!');return;
   }
 }
@@ -599,7 +651,9 @@ function buy(){
   const p=cur(),i=S.pending,sq=SQ[i];if(p.cash<sq.price)return;
   p.cash-=sq.price;S.own[i]={owner:p.id,level:0,mort:false};sfx('buy');
   log(`${p.name} compra ${sq.name} (${fmt(sq.price)})`);
-  setMsg(sq.g&&ownsGroup(p,sq.g)?`Gruppo ${G[sq.g].n} completo!`:`${sq.code} è tuo`,'good');
+  const full=sq.g&&ownsGroup(p,sq.g);
+  setMsg(full?`Gruppo ${G[sq.g].n} completo!`:`${sq.code} è tuo`,'good');
+  if(full) confetti(80);
   S.pending=null;S.phase=afterPhase();save();render();
 }
 async function toAuction(){
@@ -611,21 +665,22 @@ async function toAuction(){
 function endTurn(){if(S.over||busy||S.phase!=='end')return;nextTurn();}
 function nextTurn(){
   if(S.over) return;
-  const n=S.players.length;let i=S.turn,k=0;
-  do{i=(i+1)%n;k++;}while(P(i).out&&k<=n);
-  if(i<=S.turn){
+  const n=S.players.length;let i=S.turn,k=0,crossed=false;
+  do{i=(i+1)%n;k++;if(i===(S.first||0))crossed=true;}while(P(i).out&&k<=n);
+  if(crossed){
     S.round++;
     const exp=(S.roys||[]).filter(r=>S.round>r.until).length+(S.pacts||[]).filter(x=>S.round>x.until).length;
     S.roys=(S.roys||[]).filter(r=>S.round<=r.until);S.pacts=(S.pacts||[]).filter(x=>S.round<=x.until);
     if(exp) log(`${exp} accordi sotto banco scaduti`);
     if(S.limit&&S.round>S.limit){log(`Fine dei ${S.limit} giri`);endGame();return;}
+    pickWeekend();
   }
   S.turn=i;startTurn();
 }
 async function startTurn(){
   const p=cur();
   S.doubles=0;S.lastDbl=false;S.phase='roll';S.pending=null;
-  setMsg(`Tocca a ${p.name}`);
+  setMsg(`Tocca a ${p.name}`);banner(p);
   if(p.stopgo){
     S.phase='stopgo';save();render();
     const c=p.cpu?cpuStopGo(p):await ask(`${handoff(p)}<h2>🚦 Stop &amp; Go</h2><p>${esc(p.name)} è fermo in Pit Lane.</p>
@@ -638,9 +693,9 @@ async function startTurn(){
     closeSheet();
     p.stopgo=false;
     if(c==='flag'){p.flags--;log(`${p.name} usa Bandiera verde`);sfx('coin');S.phase='roll';}
-    else if(c==='pay'){p.cash-=STOPGO_FEE;sfx('pay');log(`${p.name} paga lo Stop & Go`);S.phase='roll';}
+    else if(c==='pay'){p.cash-=STOPGO_FEE;S.pot=(S.pot||0)+STOPGO_FEE;sfx('pay');log(`${p.name} paga lo Stop & Go`);S.phase='roll';}
     else if(c==='bribe'){
-      p.cash-=BRIBE;sfx('pay');
+      p.cash-=BRIBE;S.pot=(S.pot||0)+BRIBE;sfx('pay');
       if(Math.random()<.5){setMsg('🕶️ Commissari corrotti: si riparte!','good');log(`${p.name} corrompe i commissari`);S.phase='roll';sfx('deal');}
       else{setMsg('🕶️ Bustarella scoperta! Turno saltato','warn');log(`${p.name} scoperto a corrompere i commissari`);S.phase='end';sfx('siren');}
     }
@@ -727,6 +782,7 @@ function execOffer(o){
   if(o.royGive.pct) o.give.forEach(i=>S.roys.push({prop:i,holder:a.id,pct:o.royGive.pct,until:S.round+o.royGive.turns}));
   if(o.royGet.pct) o.get.forEach(i=>S.roys.push({prop:i,holder:b.id,pct:o.royGet.pct,until:S.round+o.royGet.turns}));
   if(o.pact) S.pacts.push({a:a.id,b:b.id,until:S.round+o.pact});
+  st(a.id).deals++;st(b.id).deals++;
   sfx('deal');log(`🤝 Affare ${a.name} ⇄ ${b.name}`);setMsg(`🤝 Affare ${a.name} ⇄ ${b.name}`,'good');
   save();render();
 }
@@ -852,43 +908,104 @@ function side(i){if(i%8===0)return'k';if(i<8)return'b';if(i<16)return'l';if(i<24
 function buildBoard(){
   let h='';
   SQ.forEach((sq,i)=>{const[r,c]=coord(i);h+=`<button class="cell side-${side(i)}" id="c${i}" data-act="info" data-i="${i}" style="grid-area:${r}/${c}" aria-label="${esc(sq.name)}"></button>`;});
-  h+=`<div class="center"><div class="brand">Paddock <b>Tycoon</b></div><div class="dice"><div class="die" id="d1">${dieHTML(5)}</div><div class="die" id="d2">${dieHTML(2)}</div></div><div class="now" id="now"></div><div class="msg" id="msg"></div></div>`;
+  h+=`<div class="center"><div class="brand">Paddock <b>Tycoon</b></div><div class="dice"><div class="die" id="d1">${dieHTML(5)}</div><div class="die" id="d2">${dieHTML(2)}</div></div><div class="now" id="now"></div><div class="msg" id="msg"></div><div class="pot" id="pot"></div></div><div class="cars" id="cars"></div><div class="banner" id="banner"></div>`;
   $('#board').innerHTML=h;
 }
 function cellHTML(i){
   const sq=SQ[i],o=S&&S.own[i];
-  const tks=S?S.players.filter(p=>!p.out&&p.pos===i).map(p=>tok(p,cur()===p?'me':'')).join(''):'';
   let h='';
   if(sq.t==='c'){
     h=`<span class="strip"></span><span>${sq.code}</span>`;
     if(o){ if(o.mort) h+=`<span class="pr">IPO</span>`; else h+=o.level===4?`<span class="lv"><b>GP</b></span>`:`<span class="lv">${'<i></i>'.repeat(o.level)}</span>`; }
     else h+=`<span class="pr">${sq.price}</span>`;
-  } else if(sq.t==='u') h=`<span>${sq.code}</span>${o?(o.mort?'<span class="pr">IPO</span>':''):`<span class="pr">${sq.price}</span>`}`;
+  } else if(sq.t==='u') h=`${sq.code==='GOMME'?IC.tyre:IC.fuel}${o?(o.mort?'<span class="pr">IPO</span>':''):`<span class="pr">${sq.price}</span>`}`;
   else if(sq.t==='go'||['pit','sc','cops'].includes(sq.t)) h=`<span class="lbl">${sq.code}</span>`;
+  else if(sq.t==='card') h=`${IC.card}<span>RADIO</span>`;
+  else if(sq.t==='tax') h=`${IC.tax}<span>${sq.amount}</span>`;
+  else if(sq.t==='drs') h=`<span class="drs">DRS</span><span class="pr">+3</span>`;
   else h=`<span>${sq.code}</span>`;
   if(S&&roysOn(i).length) h+='<span class="roy">%</span>';
-  return h+`<span class="tks">${tks}</span>`;
+  return h;
 }
 function render(){
   if(!$('#c0')) buildBoard();
   SQ.forEach((sq,i)=>{
     const el=$('#c'+i),o=S&&S.own[i];
     el.innerHTML=cellHTML(i);
-    el.className=`cell side-${side(i)} ${sq.t} ${['c','u','go'].includes(sq.t)?'':'special'} ${i%8===0?'k':''} ${o?'owned':''} ${o&&o.mort?'mort':''} ${S&&S.pending===i?'hl':''}`;
+    el.className=`cell side-${side(i)} ${sq.t} ${['c','u','go'].includes(sq.t)?'':'special'} ${i%8===0?'k':''} ${o?'owned':''} ${o&&o.mort?'mort':''} ${S&&S.pending===i?'hl':''} ${S&&S.weekend===i?'wk':''}`;
     el.style.setProperty('--g',sq.g?G[sq.g].c:'transparent');
     if(o) el.style.setProperty('--oc',P(o.owner).color);
   });
   const now=$('#now'),msg=$('#msg');
-  if(!S){now.innerHTML='<small>Griglia di partenza</small>';msg.textContent='';$('#tower').innerHTML='';$('#actions').innerHTML=`<div class="row"><button class="btn primary" data-act="setup">Nuova partita</button></div>`;$('#ticker').innerHTML='';return;}
+  placeCars();
+  if(!S){$('#pot').innerHTML='';now.innerHTML='<small>Griglia di partenza</small>';msg.textContent='';$('#tower').innerHTML='';$('#actions').innerHTML=`<div class="row"><button class="btn primary" data-act="setup">Nuova partita</button></div>`;$('#ticker').innerHTML='';return;}
   const p=cur();
   now.innerHTML=S.over?'<small>Bandiera a scacchi</small>':`${tok(p)} ${esc(p.name)} <small>· giro ${S.round}${S.limit?'/'+S.limit:''}</small>`;
   msg.textContent=S.msg?S.msg.text:'';msg.className='msg '+(S.msg?S.msg.kind:'');
   if(!busy){$('#d1').innerHTML=dieHTML(S.dice[0]);$('#d2').innerHTML=dieHTML(S.dice[1]);}
-  $('#tower').innerHTML=S.players.map(q=>`<button class="chip ${q===p&&!S.over?'now':''} ${q.out?'out':''}" data-act="pinfo" data-i="${q.id}">
+  $('#pot').innerHTML=(S.weekend!=null?`<span>🏁 GP ${SQ[S.weekend].code} ×2</span>`:'')+`<span class="${S.pot>=100?'full':''}">🚨 SC ${fmt(S.pot||0)}</span>`;
+  $('#tower').innerHTML=S.players.map(q=>`<button class="chip ${q===p&&!S.over?'turn':''} ${q.out?'out':''}" data-act="pinfo" data-i="${q.id}">
     ${tok(q)}<span class="nm">${esc(q.name)}${q.cpu?'<span class="b">CPU</span>':''}${q.stopgo?'<span class="b red">S&amp;G</span>':''}${q.flags?'<span class="b gold">🏁'+q.flags+'</span>':''}</span>
     <span class="cash">${q.out?'OUT':fmt(q.cash)}</span></button>`).join('');
   renderActions();
   $('#ticker').innerHTML=`${ICON_LOG}<span>${esc(S.log[0]||'')}</span>`;
+  floats();
+}
+const IC={
+  card:'<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4.5 10a9 9 0 0 1 15 0M7.5 12.8a5 5 0 0 1 9 0"/><circle cx="12" cy="16.5" r="2.2" fill="currentColor" stroke="none"/></svg>',
+  tax:'<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5" fill="#f5b400"/><text x="12" y="16.6" text-anchor="middle" font-size="13" font-weight="900" fill="#15171c" font-family="Arial,sans-serif">€</text></svg>',
+  tyre:'<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.5" fill="#15171c"/><circle cx="12" cy="12" r="7" fill="none" stroke="#f5b400" stroke-width="1.8"/><circle cx="12" cy="12" r="3.2" fill="#9ca3af"/></svg>',
+  fuel:'<svg class="ic" viewBox="0 0 24 24"><path d="M12 2.5c3.6 4.7 6.6 8.4 6.6 12.1a6.6 6.6 0 0 1-13.2 0c0-3.7 3-7.4 6.6-12.1z" fill="#e10a1e"/><path d="M9 15.2a3 3 0 0 0 3 3" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>',
+};
+const CAR=c=>`<svg viewBox="0 0 20 34"><rect x="2" y="1" width="16" height="3" rx="1" fill="#15171c"/><rect x="0" y="6" width="4" height="7" rx="1.2" fill="#15171c"/><rect x="16" y="6" width="4" height="7" rx="1.2" fill="#15171c"/><rect x="0" y="21" width="4" height="8" rx="1.2" fill="#15171c"/><rect x="16" y="21" width="4" height="8" rx="1.2" fill="#15171c"/><path d="M8.5 3h3l1 8h3l1 13h-3.5l-.5 5h-5l-.5-5H3.5l1-13h3z" fill="${c}" stroke="#fff" stroke-width=".9" stroke-linejoin="round"/><circle cx="10" cy="17" r="2.4" fill="#fff" stroke="#15171c" stroke-width="1"/><rect x="2.5" y="29.5" width="15" height="3.5" rx="1" fill="#15171c"/></svg>`;
+const carRot={};
+const rotFor=i=>i<8?-90:i<16?0:i<24?90:180;
+function placeCars(){
+  const layer=$('#cars');if(!layer)return;
+  if(!S){layer.innerHTML='';return;}
+  const c1=$('#c1');$('#board').style.setProperty('--car',Math.max(8,Math.min(c1.offsetWidth,c1.offsetHeight)*.46)+'px');
+  const groups={};
+  S.players.forEach(p=>{if(!p.out)(groups[p.pos]=groups[p.pos]||[]).push(p.id);});
+  S.players.forEach(p=>{
+    let el=document.getElementById('car'+p.id);
+    if(!el){el=document.createElement('div');el.id='car'+p.id;el.className='car';el.innerHTML=CAR(p.color);layer.appendChild(el);}
+    el.hidden=p.out;if(p.out)return;
+    const cell=$('#c'+p.pos),g=groups[p.pos],k=g.indexOf(p.id),n=g.length;
+    let x=cell.offsetLeft+cell.offsetWidth/2,y=cell.offsetTop+cell.offsetHeight/2;
+    if(n>1){const a=k/n*Math.PI*2-Math.PI/2,r=Math.min(cell.offsetWidth,cell.offsetHeight)*.24;x+=Math.cos(a)*r;y+=Math.sin(a)*r;}
+    const want=rotFor(p.pos);let cur0=carRot[p.id];
+    if(cur0===undefined)cur0=want;else{let d=((want-cur0)%360+540)%360-180;cur0+=d;}
+    carRot[p.id]=cur0;
+    el.style.transform=`translate(${x}px,${y}px) rotate(${cur0}deg)`;
+    el.classList.toggle('me',!S.over&&cur()===p);
+  });
+}
+addEventListener('resize',()=>requestAnimationFrame(placeCars));
+const prevCash={};
+function floats(){
+  S.players.forEach(p=>{
+    const prev=prevCash[p.id];prevCash[p.id]=p.cash;
+    if(prev===undefined||prev===p.cash)return;
+    const chip=document.querySelector(`.chip[data-i="${p.id}"]`);if(!chip)return;
+    const r=chip.getBoundingClientRect(),d=p.cash-prev,el=document.createElement('div');
+    el.className='float '+(d>0?'plus':'minus');el.textContent=(d>0?'+':'−')+fmt(Math.abs(d));
+    el.style.left=Math.max(4,r.right-86)+'px';el.style.top=(r.top-2)+'px';
+    $('#fx').appendChild(el);setTimeout(()=>el.remove(),1400);
+  });
+}
+function banner(p){const b=$('#banner');if(b)b.innerHTML=`<div style="--pc:${p.color}">${esc(p.name)}</div>`;}
+function confetti(n=140){
+  if(reduced)return;
+  const cv=$('#confetti');cv.hidden=false;const ctx=cv.getContext('2d'),s=devicePixelRatio||1;
+  const W=cv.width=innerWidth*s,H=cv.height=innerHeight*s;
+  const cols=['#e10a1e','#f5b400','#15171c','#2563eb','#15a34a','#ec4899','#ffffff'];
+  const ps=Array.from({length:n},()=>({x:W/2+(Math.random()-.5)*W*.35,y:H*.4,vx:(Math.random()-.5)*16*s,vy:(-Math.random()*13-4)*s,r:Math.random()*6,vr:(Math.random()-.5)*.4,w:(4+Math.random()*5)*s,h:(6+Math.random()*8)*s,c:cols[Math.floor(Math.random()*cols.length)]}));
+  const t0=performance.now();
+  (function f(t){
+    ctx.clearRect(0,0,W,H);
+    ps.forEach(q=>{q.vy+=.38*s;q.x+=q.vx;q.y+=q.vy;q.vx*=.985;q.r+=q.vr;ctx.save();ctx.translate(q.x,q.y);ctx.rotate(q.r);ctx.fillStyle=q.c;ctx.fillRect(-q.w/2,-q.h/2,q.w,q.h);ctx.restore();});
+    if(t-t0<2800)requestAnimationFrame(f);else{ctx.clearRect(0,0,W,H);cv.hidden=true;}
+  })(t0);
 }
 function renderActions(){
   const a=$('#actions'),p=cur();
@@ -956,7 +1073,7 @@ function showManage(){
     <div class="row"><button class="btn dark" data-act="close">Chiudi</button></div>`);
 }
 function showRules(){
-  const R=[['🎲 Giro',`2 dadi, +${fmt(LAP_BONUS)} al via. Doppio = rilanci; 3 doppi = Stop & Go.`],
+  const R=[['🏎️ Pole position','All\'inizio tutti lanciano i dadi: il più alto parte per primo.'],['🎲 Giro',`2 dadi, +${fmt(LAP_BONUS)} al via. Doppio = rilanci; 3 doppi = Stop & Go.`],
     ['🏟️ Circuiti','Compra o manda all\'asta. Gruppo completo = diritti ×2.'],
     ['🏗️ Tribune e GP','Con il gruppo: fino a 3 tribune, poi il Gran Premio.'],
     ['🔨 Aste','Se nessuno compra, tutti rilanciano. Chi passa è fuori.'],
@@ -965,19 +1082,28 @@ function showRules(){
     ['🤝 Affari','Circuiti e soldi, con controfferte a catena.'],
     ['🕶️ Sotto banco','Cedi ma tieni 10–75% dei diritti per 1–3 giri. Patti di non belligeranza.'],
     ['🚦 Stop & Go',`Paga ${fmt(STOPGO_FEE)}, usa la Bandiera verde, salta, o tenta la bustarella (50%).`],
-    ['🏁 Fine','Ultimo in gara, oppure patrimonio più alto a fine giri.']];
+    ['🏁 GP del weekend','A ogni giro un circuito ospita il GP: diritti ×2.'],
+    ['🚨 Montepremi SC','Tasse, multe e bustarelle finiscono nel montepremi: chi si ferma sulla Safety Car lo incassa.'],
+    ['🏆 Fine','Ultimo in gara, oppure patrimonio più alto a fine giri.']];
   openSheet(`<h2>Regolamento</h2><div class="rules">${R.map(([t,d])=>`<div><b>${t}</b>${d}</div>`).join('')}</div><div class="row"><button class="btn dark" data-act="close">Chiudi</button></div>`);
 }
 function showLog(){openSheet(`<h2>Direzione gara</h2><ol class="logl">${S.log.map(t=>`<li>${esc(t)}</li>`).join('')}</ol><div class="row"><button class="btn dark" data-act="close">Chiudi</button></div>`);}
+function awards(){
+  const best=k=>{const p=[...S.players].sort((a,b)=>st(b.id)[k]-st(a.id)[k])[0];return st(p.id)[k]>0?p:null;};
+  const a=[['💰 Re dei diritti','rent',v=>fmt(v)],['🤝 Faccendiere','deals',v=>v+' affari'],['🏗️ Costruttore','built',v=>v+' tribune/GP']]
+    .map(([t,k,f])=>{const p=best(k);return p?`<div>${t}<b>${tok(p)} ${esc(p.name)} · ${f(st(p.id)[k])}</b></div>`:'';}).join('');
+  return a?`<div class="stats">${a}</div>`:'';
+}
 function showGameOver(){
   const r=ranking();
   openSheet(`<h2>🏁 ${esc(r[0].name)} campione!</h2>
     <div class="rank">${r.map((p,k)=>`<div><span class="pos">${k+1}</span><span>${tok(p)} ${esc(p.name)}${p.out?' · out':''}</span><b>${fmt(netWorth(p))}</b></div>`).join('')}</div>
+    ${awards()}
     <div class="row"><button class="btn primary" data-act="setup">Rivincita</button><button class="btn dark" data-act="close">Tabellone</button></div>`);
 }
 
 // ================= Setup =================
-let setup={players:[{name:'Tu',cpu:false,color:COLORS[0]},{name:'CPU Alfa',cpu:true,color:COLORS[1]},{name:'CPU Bravo',cpu:true,color:COLORS[2]}],limit:0};
+let setup={fast:false,players:[{name:'Tu',cpu:false,color:COLORS[0]},{name:'CPU Alfa',cpu:true,color:COLORS[1]},{name:'CPU Bravo',cpu:true,color:COLORS[2]}],limit:0};
 function syncNames(){setup.players.forEach((p,i)=>{const v=$('#pname-'+i);if(v)p.name=v.value;});const l=$('#limit');if(l)setup.limit=+l.dataset.v;}
 function showSetup(){
   const rows=setup.players.map((p,i)=>`<div class="prow">
@@ -988,16 +1114,52 @@ function showSetup(){
   openSheet(`<h2>Griglia di partenza</h2>
     <div class="tiles" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${rows}</div>
     <div class="row"><button class="btn sm" data-act="add" ${setup.players.length>=6?'disabled':''}>+ Pilota</button>
+      <div class="seg">${[[false,'Ritmo normale'],[true,'Veloce']].map(([v,l])=>`<button class="${setup.fast===v?'on':''}" data-act="pace" data-v="${v}">${l}</button>`).join('')}</div>
       <div class="seg" id="limit" data-v="${setup.limit}">${[[0,'∞ Ultimo in gara'],[15,'15 giri'],[25,'25 giri']].map(([v,l])=>`<button class="${setup.limit==v?'on':''}" data-act="lim" data-v="${v}">${l}</button>`).join('')}</div></div>
     <div class="row"><button class="btn primary" data-act="start">🚦 Via!</button>${S&&!S.over?'<button class="btn out" data-act="close">Riprendi</button>':''}</div>`,!!S);
 }
-function startGame(){
+async function chooseOrder(){
+  const res={};let cont=S.players.map(p=>p.id),tie=false;
+  const view=(btn)=>{
+    const sums=cont.filter(id=>res[id]).map(id=>res[id][0]+res[id][1]),mx=Math.max(0,...sums);
+    return `<h2>🏎️ Chi parte in pole?</h2>${tie?'<p><b>Pari! Spareggio.</b></p>':''}
+      <div class="order">${S.players.map(p=>{const r=res[p.id];const on=r&&cont.includes(p.id)&&r[0]+r[1]===mx;
+        return `<div class="${on?'best':''}">${tok(p)}<span>${esc(p.name)}</span><span class="dd">${r?`<span class="die">${dieHTML(r[0])}</span><span class="die">${dieHTML(r[1])}</span>`:'<span class="muted">…</span>'}</span><span class="sum">${r?r[0]+r[1]:''}</span></div>`;}).join('')}</div>${btn}`;
+  };
+  for(let guard=0;guard<10&&cont.length>1;guard++){
+    for(const id of cont){
+      const p=P(id);
+      if(p.cpu){openSheet(view(`<div class="waitline">${tok(p)} ${esc(p.name)} lancia…</div>`),false);await wait(550);}
+      else await ask(view(`${handoff(p)}<div class="row"><button class="btn primary" data-choice="roll">🎲 Lancia ${esc(p.name)}</button></div>`));
+      res[id]=[rnd6(),rnd6()];sfx('dice');
+      openSheet(view(''),false);await wait(450);
+    }
+    const mx=Math.max(...cont.map(id=>res[id][0]+res[id][1]));
+    const top=cont.filter(id=>res[id][0]+res[id][1]===mx);
+    if(top.length>1){tie=true;cont=top;cont.forEach(id=>delete res[id]);openSheet(view(''),false);await wait(700);}
+    else cont=top;
+  }
+  const w=P(cont[0]);
+  sfx('engine');
+  const pole=`<div class="pole">${tok(w)} ${esc(w.name)} parte in pole!</div>`;
+  if(S.players.every(p=>p.cpu)){openSheet(view(pole),false);await wait(1200);}
+  else await ask(view(pole+`<div class="row"><button class="btn primary" data-choice="go">🚦 Semaforo verde</button></div>`));
+  closeSheet();
+  return w.id;
+}
+async function startGame(){
   syncNames();
   setup.players.forEach((p,i)=>{p.name=(p.name||'').trim()||`Pilota ${i+1}`;});
   S={players:setup.players.map((p,i)=>({id:i,name:p.name,color:p.color,cpu:p.cpu,cash:START_CASH,pos:0,out:false,stopgo:false,flags:0})),
     own:{},roys:[],pacts:[],turn:0,phase:'roll',doubles:0,lastDbl:false,dice:[5,2],round:1,limit:setup.limit,
-    deck:shuffle([...CARDS.keys()]),deckPos:0,log:[],msg:null,over:false,pending:null,asked:{}};
-  log('Semaforo verde!');closeSheet();sfx('engine');startTurn();
+    deck:shuffle([...CARDS.keys()]),deckPos:0,log:[],msg:null,over:false,pending:null,asked:{},
+    pot:0,weekend:null,stats:{},first:0,fast:setup.fast};
+  S.phase='order';
+  $('#cars').innerHTML='';for(const k in carRot)delete carRot[k];for(const k in prevCash)delete prevCash[k];
+  closeSheet();render();
+  const w=await chooseOrder();
+  S.first=S.turn=w;S.phase='roll';
+  log('Semaforo verde!');pickWeekend();sfx('engine');startTurn();
 }
 
 // ================= Eventi =================
@@ -1029,9 +1191,10 @@ const ACT={
   human:b=>{syncNames();setup.players[+b.dataset.i].cpu=false;showSetup();},
   cpu:b=>{syncNames();setup.players[+b.dataset.i].cpu=true;showSetup();},
   lim:b=>{syncNames();setup.limit=+b.dataset.v;showSetup();},
+  pace:b=>{syncNames();setup.fast=b.dataset.v==='true';showSetup();},
   col:b=>{syncNames();const p=setup.players[+b.dataset.i],used=setup.players.map(x=>x.color);let k=COLORS.indexOf(p.color);for(let n=0;n<6;n++){k=(k+1)%6;if(!used.includes(COLORS[k]))break;}p.color=COLORS[k];showSetup();},
 };
-const NO_GAME_OK=['fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','info'];
+const NO_GAME_OK=['fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info'];
 document.addEventListener('pointerdown',()=>ac(),{once:true});
 document.addEventListener('click',e=>{
   const c=e.target.closest('[data-choice]');
@@ -1048,7 +1211,9 @@ function boot(){
   paintSound();buildBoard();
   const saved=loadSaved();
   if(saved&&saved.players&&!saved.over){
-    S=saved;busy=false;S.roys=S.roys||[];S.pacts=S.pacts||[];
+    S=saved;busy=false;S.roys=S.roys||[];S.pacts=S.pacts||[];S.pot=S.pot||0;S.stats=S.stats||{};S.first=S.first||0;
+    if(S.phase==='order'){S.phase='roll';}
+    setup.fast=!!S.fast;
     setup.players=S.players.map(p=>({name:p.name,cpu:p.cpu,color:p.color}));setup.limit=S.limit||0;
     if(S.phase==='auction'){S.phase='buy';}
     if(S.phase==='buy'&&S.pending==null) S.phase='end';
