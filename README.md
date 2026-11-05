@@ -36,6 +36,7 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 - A fine partita: grafico del patrimonio giro per giro (con dettaglio al tocco) e premi.
 - Da tastiera: Spazio/Invio per lanciare o finire il turno, C per comprare, A per l'asta.
 - Ritmo normale o veloce, scelto nella griglia di partenza.
+- **Musica del menu**: loop elettronico da corsa generato dal browser (Web Audio, nessun file audio), che sfuma quando inizia la partita; si spegne con il pulsante 🎵 Musica.
 - Effetti sonori sintetizzati, disattivabili con l'icona dell'altoparlante.
 - Vince l'ultimo in gara, oppure il patrimonio più alto dopo 15 o 25 giri.
 - La partita si salva automaticamente nel browser.

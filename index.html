@@ -327,6 +327,7 @@ body{overflow:hidden;box-sizing:border-box;padding-block:6px;padding-right:max(3
 .cell.side-b .ctrk,.cell.side-t .ctrk{height:52%}
 @media (max-aspect-ratio:1/1){.cell.c{flex-direction:column}.cell .ctrk{height:34%}}
 /* Menu principale */
+.mmusic{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:max(14px,env(safe-area-inset-right,0px));background:var(--surface)}
 .plist{display:grid;gap:8px}
 .plist .btn{justify-content:flex-start}
 .plist .btn small{margin-left:auto}
@@ -563,6 +564,67 @@ const SFX={
   engine:()=>tone(90,.5,'sawtooth',.05,0,240),
 };
 const VIB={dice:12,pay:25,bankrupt:[70,40,70],gavel:18,siren:[30,40,30],buy:15,win:[40,30,40,30,80]};
+// ================= Musica del menu (sintetizzata) =================
+const MUSIC_KEY='paddock-tycoon-music';
+const MUSIC={on:true,playing:false,timer:null,next:0,step:0,out:null,delay:null,noise:null};
+try{MUSIC.on=localStorage.getItem(MUSIC_KEY)!=='0';}catch(e){}
+const mf=m=>440*Math.pow(2,(m-69)/12);
+// La minore · Fa · Do · Sol, 120 BPM, sedicesimi
+const CHORDS=[[57,60,64],[53,57,60],[48,52,55],[55,59,62]];
+const ARP=[0,1,2,3,2,1,0,1,2,3,4,3,2,1,2,3];
+function mVoice(type,f,t,dur,vol,dest,att=.008){
+  const a=AC,o=a.createOscillator(),g=a.createGain();
+  o.type=type;o.frequency.setValueAtTime(f,t);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+att);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g).connect(dest);o.start(t);o.stop(t+dur+.05);return o;
+}
+function mNoise(t,dur,vol,type,freq){
+  const a=AC,s2=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();
+  s2.buffer=MUSIC.noise;f.type=type;f.frequency.value=freq;
+  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  s2.connect(f).connect(g).connect(MUSIC.out);s2.start(t,Math.random()*.5);s2.stop(t+dur+.02);
+}
+function mStep(t,k){
+  const a=AC,bar=Math.floor(k/16)%4,st=k%16,ch=CHORDS[bar],loop=Math.floor(k/64);
+  // cassa
+  if(st%4===0){const o=a.createOscillator(),g=a.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(42,t+.12);g.gain.setValueAtTime(.85,t);g.gain.exponentialRampToValueAtTime(.0001,t+.28);o.connect(g).connect(MUSIC.out);o.start(t);o.stop(t+.3);}
+  // rullante e charleston
+  if(st===4||st===12) mNoise(t,.16,.32,'bandpass',1900);
+  if(st%2===0) mNoise(t,st%4===2?.06:.03,st%4===2?.13:.06,'highpass',7500);
+  // basso in ottavi, salto d'ottava
+  if(st%2===0){const lp=a.createBiquadFilter();lp.type='lowpass';lp.frequency.value=520;lp.connect(MUSIC.out);mVoice('sawtooth',mf(ch[0]-24+(st===6||st===14?12:0)),t,.2,.13,lp);}
+  // arpeggio con eco (entra dal secondo giro)
+  if(loop>0||bar>1){const tones=[ch[0],ch[1],ch[2],ch[0]+12,ch[1]+12];mVoice('square',mf(tones[ARP[st]]+12),t,.11,.035,MUSIC.delay);}
+  // accordo di sottofondo
+  if(st===0){const lp=a.createBiquadFilter();lp.type='lowpass';lp.frequency.value=950;lp.connect(MUSIC.out);ch.forEach((m,j)=>{mVoice('sawtooth',mf(m)*(1+(j-1)*.003),t,2.1,.028,lp,.35);});}
+  // piccolo riff ogni secondo giro
+  if(loop%2===1&&(st===0||st===3||st===6||st===10)&&bar<3){mVoice('triangle',mf(ch[[2,1,0,1][[0,3,6,10].indexOf(st)]]+12),t,.32,.07,MUSIC.delay);}
+}
+function mSchedule(){
+  if(!MUSIC.playing||!AC)return;
+  const spb=60/120/4;
+  while(MUSIC.next<AC.currentTime+.15){mStep(MUSIC.next,MUSIC.step);MUSIC.next+=spb;MUSIC.step++;}
+}
+function musicStart(){
+  if(!MUSIC.on||muted||MUSIC.playing||$('#menu').hidden)return;
+  const a=ac();if(!a)return;
+  if(!MUSIC.noise){const n=a.sampleRate,b=a.createBuffer(1,n,n),d=b.getChannelData(0);for(let k=0;k<n;k++)d[k]=Math.random()*2-1;MUSIC.noise=b;}
+  const out=a.createGain(),comp=a.createDynamicsCompressor(),dl=a.createDelay(1),fb=a.createGain(),wet=a.createGain();
+  out.gain.setValueAtTime(0,a.currentTime);out.gain.linearRampToValueAtTime(.5,a.currentTime+1.8);
+  dl.delayTime.value=.375;fb.gain.value=.32;wet.gain.value=.35;
+  const dIn=a.createGain();dIn.connect(out);dIn.connect(dl);dl.connect(fb).connect(dl);dl.connect(wet).connect(out);
+  out.connect(comp).connect(a.destination);
+  MUSIC.out=out;MUSIC.delay=dIn;MUSIC.playing=true;MUSIC.next=a.currentTime+.12;MUSIC.step=0;
+  MUSIC.timer=setInterval(mSchedule,25);paintMusic();
+}
+function musicStop(fade=.7){
+  if(!MUSIC.playing)return;
+  clearInterval(MUSIC.timer);MUSIC.playing=false;
+  const g=MUSIC.out,t=AC.currentTime;
+  try{g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+fade);}catch(e){}
+  setTimeout(()=>{try{g.disconnect();}catch(e){}},fade*1000+300);paintMusic();
+}
+function paintMusic(){const b=$('#musicbtn');if(b){b.textContent=MUSIC.on&&!muted?'🎵 Musica':'🔇 Musica';b.setAttribute('aria-pressed',MUSIC.on&&!muted?'true':'false');}}
 function sfx(n){
   if(muted) return;
   if(SFX[n]) try{SFX[n]();}catch(e){}
@@ -1398,7 +1460,7 @@ async function chooseOrder(){
   return w.id;
 }
 async function startGame(champ=null){
-  hideMenu();GEN++;
+  hideMenu();musicStop();GEN++;
   syncNames();
   setup.players.forEach((p,i)=>{p.name=(p.name||'').trim()||`Pilota ${i+1}`;});
   if(!champ&&setup.mode!=='single'){
@@ -1426,7 +1488,7 @@ function showMenu(){
   const sv=loadSaved(),can=sv&&sv.players&&!sv.over;
   const ids=SQ.map((q,i)=>i).filter(i=>SQ[i].t==='c'),band=ids.map(i=>`<span>${trackSVG(i,'mini')}<small>${SQ[i].code}</small></span>`).join('');
   const who=can?sv.players.filter(p=>!p.out).map(p=>`<span class="tk" style="--pc:${p.color}"></span>`).join(''):'';
-  $('#menu').innerHTML=`<div class="mcard">
+  $('#menu').innerHTML=`<button class="btn sm mmusic" id="musicbtn" data-act="music" aria-pressed="true">🎵 Musica</button><div class="mcard">
     <div class="mhero"><div class="mcar">${CAR('#e10a1e')}</div><div><div class="mlogo">Paddock <b>Tycoon</b></div><p class="mtag">Compra circuiti, tratta sotto banco, vinci il campionato.</p></div></div>
     <div class="mbtns">
       ${can?`<button class="btn primary mbig" data-act="resume">▶ Continua <small>${sv.champ?esc(sv.champ.names[sv.champ.idx])+' · ':''}giro ${sv.round} ${who}</small></button>`:''}
@@ -1437,6 +1499,7 @@ function showMenu(){
     </div></div>
     <div class="marq" aria-hidden="true"><div class="mrow">${band}${band}</div></div>`;
   $('#menu').hidden=false;
+  paintMusic();musicStart();
 }
 function hideMenu(){$('#menu').hidden=true;}
 function showPause(){
@@ -1465,7 +1528,7 @@ function quitToMenu(discard){
 }
 function resumeSaved(){
   const saved=loadSaved();if(!saved||!saved.players||saved.over){showMenu();return;}
-  hideMenu();GEN++;
+  hideMenu();musicStop();GEN++;
   S=saved;busy=false;cpuActive=false;S.roys=S.roys||[];S.pacts=S.pacts||[];S.pot=S.pot||0;S.stats=S.stats||{};S.first=S.first||0;S.hist=S.hist||[];
   if(S.champ){setup.mode=S.champ.n===5?'c5':'c3';setup.climit=S.champ.limit;}else setup.mode='single';
   setup.fast=!!S.fast;setup.diff=S.diff||'normal';setup.limit=S.limit||0;
@@ -1534,7 +1597,8 @@ const ACT={
   newchamp:()=>{if(setup.mode==='single')setup.mode='c3';hideMenu();showSetup();},
   learn:()=>{try{localStorage.removeItem(TUT_KEY);}catch(e){}setup.mode='single';hideMenu();showSetup();},
   rules:()=>showRules(),setup:()=>{hideMenu();showSetup();},start:()=>startGame(),results:()=>showGameOver(),
-  sound:()=>{muted=!muted;try{localStorage.setItem(MUTE_KEY,muted?'1':'0');}catch(e){}paintSound();sfx('coin');},
+  sound:()=>{muted=!muted;try{localStorage.setItem(MUTE_KEY,muted?'1':'0');}catch(e){}paintSound();sfx('coin');if(muted)musicStop(.2);else musicStart();},
+  music:()=>{if(MUSIC.on&&!muted&&performance.now()-(MUSIC.unlockedAt||-1e9)<600){musicStart();paintMusic();return;}if(muted){muted=false;try{localStorage.setItem(MUTE_KEY,'0');}catch(e){}paintSound();MUSIC.on=true;}else MUSIC.on=!MUSIC.on;try{localStorage.setItem(MUSIC_KEY,MUSIC.on?'1':'0');}catch(e){}if(MUSIC.on)musicStart();else musicStop(.3);paintMusic();},
   fullscreen:()=>goFullscreen(),
   manage:()=>showManage(),
   up:b=>{const i=+b.dataset.i;if(canUpgrade(cur(),i)){upgrade(i);after(b);}},
@@ -1567,8 +1631,8 @@ const ACT={
   col:b=>{syncNames();const p=setup.players[+b.dataset.i],used=setup.players.map(x=>x.color);let k=COLORS.indexOf(p.color);for(let n=0;n<6;n++){k=(k+1)%6;if(!used.includes(COLORS[k]))break;}p.color=COLORS[k];showSetup();},
 };
 function after(b){save();render();if(b.dataset.ctx==='info')showInfo(+b.dataset.i);else showManage();}
-const NO_GAME_OK=['pause','home','menu','tomenu','abandon','doabandon','resume','newsingle','newchamp','learn','fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info','team','diff','mode','climit','tutorial'];
-document.addEventListener('pointerdown',()=>ac(),{once:true});
+const NO_GAME_OK=['music','pause','home','menu','tomenu','abandon','doabandon','resume','newsingle','newchamp','learn','fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info','team','diff','mode','climit','tutorial'];
+document.addEventListener('pointerdown',()=>{MUSIC.unlockedAt=performance.now();ac();setTimeout(musicStart,30);},{once:true});
 document.addEventListener('click',e=>{
   const c=e.target.closest('[data-choice]');
   if(c&&!c.disabled&&choice){const r=choice;choice=null;r(c.dataset.choice);return;}
@@ -1587,7 +1651,7 @@ document.addEventListener('keydown',e=>{
 });
 let wakeLock=null;
 async function keepAwake(){try{if(!wakeLock&&navigator.wakeLock){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>wakeLock=null);}}catch(e){}}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S&&!S.over)keepAwake();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){if(S&&!S.over)keepAwake();musicStart();}else musicStop(.1);});
 
 // ================= Avvio =================
 function boot(){
