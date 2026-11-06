@@ -1661,17 +1661,30 @@ function loadScript(src){return new Promise((res,rej)=>{const s=document.createE
 const useLocalNet=()=>lsGet('paddock-tycoon-localnet')==='1';
 const onlineReady=()=>!!FIREBASE_CONFIG||useLocalNet();
 
-async function netInit(){
-  if(NET.db)return NET.db;
-  if(useLocalNet()){NET.db=localBackend();await NET.db.ready;}
-  else{
-    if(!FIREBASE_CONFIG)throw new Error('noconfig');
-    for(const m of ['app','auth','database'])await loadScript(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-${m}-compat.js`);
+let fbLoading=null;
+function loadFirebase(){
+  if(!fbLoading)fbLoading=(async()=>{
+    if(!(window.firebase&&firebase.apps))await loadScript(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-app-compat.js`);
+    if(!firebase.auth)await loadScript(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-auth-compat.js`);
+    if(!firebase.database)await loadScript(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-database-compat.js`);
     if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
-    await firebase.auth().signInAnonymously();
-    NET.db=fbBackend();
-  }
-  NET.uid=NET.db.uid;return NET.db;
+  })().catch(e=>{fbLoading=null;throw e;});
+  return fbLoading;
+}
+let netIniting=null;
+function netInit(){
+  if(NET.db)return Promise.resolve(NET.db);
+  if(!netIniting)netIniting=(async()=>{
+    if(useLocalNet()){NET.db=localBackend();await NET.db.ready;}
+    else{
+      if(!FIREBASE_CONFIG)throw new Error('noconfig');
+      await loadFirebase();
+      if(!firebase.auth().currentUser)await firebase.auth().signInAnonymously();
+      NET.db=fbBackend();
+    }
+    NET.uid=NET.db.uid;return NET.db;
+  })().finally(()=>{netIniting=null;});
+  return netIniting;
 }
 function fbBackend(){
   const d=firebase.database(),r=p=>d.ref('pt/'+p);
@@ -1718,8 +1731,14 @@ function netReset(){netOff();clearInterval(NET.cdT);clearInterval(NET.tick);clea
   paintNet();}
 function netSend(m){if(NET.db&&NET.code)NET.db.push(room('inbox'),{...m,from:NET.uid,ts:Date.now()});}
 function netError(e){
-  const msg=e&&e.message==='noconfig'?T("L'online non è ancora attivo in questa versione del gioco.",'Online play is not enabled in this version yet.')
-    :T('Connessione non riuscita. Controlla la rete e riprova.','Connection failed. Check your network and try again.');
+  const code=String((e&&(e.code||e.message))||'');
+  console.warn('[online]',e);
+  const msg=code==='noconfig'?T("L'online non è ancora attivo in questa versione del gioco.",'Online play is not enabled in this version yet.')
+    :/operation-not-allowed|admin-restricted/.test(code)?T("Firebase: l'accesso anonimo non è abilitato (Authentication → Metodo di accesso → Anonimo).",'Firebase: anonymous sign-in is not enabled (Authentication → Sign-in method → Anonymous).')
+    :/unauthorized-domain/.test(code)?T('Firebase: questo sito non è tra i domini autorizzati (Authentication → Impostazioni).','Firebase: this site is not an authorized domain (Authentication → Settings).')
+    :/permission[_ -]denied/i.test(code)?T('Firebase: permesso negato. Controlla di aver pubblicato le regole del database.','Firebase: permission denied. Check that the database rules are published.')
+    :/network|script|failed to fetch/i.test(code)?T('Connessione non riuscita. Controlla la rete e riprova.','Connection failed. Check your network and try again.')
+    :T('Errore online: ','Online error: ')+esc(code.slice(0,120));
   openSheet(`<h2>🌐 Online</h2><p>${msg}</p><div class="row"><button class="btn dark" data-act="online">${T('Indietro','Back')}</button></div>`,false);
 }
 const netTry=fn=>async(...a)=>{try{return await fn(...a);}catch(e){netError(e);}};
