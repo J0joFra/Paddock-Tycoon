@@ -426,6 +426,14 @@ body{overflow:hidden;box-sizing:border-box;padding-block:6px;padding-right:max(3
 .ach>span{font-size:22px}
 .ach b{display:block;font-size:13px}
 .ach small{font-size:11px;color:var(--muted)}
+/* Barra di convenienza */
+.meter{display:grid;gap:4px}
+.mbar{position:relative;height:10px;border-radius:6px;background:var(--surface-2);overflow:hidden}
+.mbar i{position:absolute;left:50%;top:-2px;bottom:-2px;width:2px;background:var(--ink);opacity:.5}
+.mfill{position:absolute;top:0;bottom:0;width:var(--x)}
+.mfill.pos{left:50%;background:var(--green)}
+.mfill.neg{right:50%;background:var(--red)}
+.mtxt{display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:700;flex-wrap:wrap}
 /* Logo */
 .brandlogo{display:block;height:auto;font-style:normal;font-weight:400;filter:drop-shadow(0 6px 10px rgba(21,23,28,.18))}
 .center .brand .brandlogo{width:clamp(110px,31vmin,250px)}
@@ -1119,13 +1127,38 @@ function cpuStopGo(p){
   if(p.cash>=250) return 'pay';
   return 'skip';
 }
+// Diritto più alto che la CPU rischia di pagare nelle prossime 12 caselle
+function dangerAhead(p){
+  let m=0;for(let d=2;d<=12;d++){const i=(p.pos+d)%32,o=S.own[i];if(o&&o.owner!==p.id&&!o.mort&&!P(o.owner).out&&!pactActive(p.id,o.owner))m=Math.max(m,SQ[i].t==='u'?60:rentOf(i));}
+  return m;
+}
+function completesFor(q,i){const sq=SQ[i];return !!sq.g&&groupIdx(sq.g).every(j=>j===i||(S.own[j]&&S.own[j].owner===q.id));}
 function cpuWantsBuy(p,i){
-  const sq=SQ[i];if(p.cash<sq.price)return false;
-  const completes=sq.g&&groupIdx(sq.g).every(j=>j===i||(S.own[j]&&S.own[j].owner===p.id));
-  return completes||p.cash-sq.price>=df().reserve;
+  const sq=SQ[i];
+  const completes=completesFor(p,i),blocks=S.players.some(q=>q!==p&&!q.out&&completesFor(q,i));
+  if(p.cash<sq.price){
+    if(completes&&!p.loan&&S.diff!=='easy'){const need=sq.price-p.cash;const n=[100,200,300].find(v=>v>=need+30);
+      if(n){p.cash+=n;p.loan={owe:Math.round(n*1.3),due:S.round+3};log(T(`🦈 ${p.name} prende ${fmt(n)} dallo strozzino`,`🦈 ${p.name} borrows ${fmt(n)} from the loan shark`));return true;}}
+    return false;
+  }
+  if(completes)return true;
+  const reserve=Math.max(df().reserve,dangerAhead(p)*.6)*(blocks?.5:1);
+  return p.cash-sq.price>=reserve;
 }
 function cpuManage(p){
-  for(const i of propsOf(p)) if(S.own[i].mort&&p.cash-unmortCost(i)>=400) unmortgage(i);
+  // restituisce il prestito appena può permetterselo
+  if(p.loan&&p.cash-p.loan.owe>=Math.max(250,dangerAhead(p))){p.cash-=p.loan.owe;log(T(`${p.name} salda lo strozzino (${fmt(p.loan.owe)})`,`${p.name} pays off the loan shark (${fmt(p.loan.owe)})`));p.loan=null;}
+  const building=propsOf(p).some(i=>SQ[i].t==='c'&&S.own[i].level<4&&ownsGroup(p,SQ[i].g));
+  for(const i of propsOf(p)) if(S.own[i].mort&&p.cash-unmortCost(i)>=(building?650:400)) unmortgage(i);
+  // ipoteca circuiti isolati per finanziare tribune su un gruppo completo
+  if(S.diff!=='easy'){
+    const target=propsOf(p).filter(i=>SQ[i].t==='c'&&S.own[i].level<4&&ownsGroup(p,SQ[i].g)&&!groupHasMort(SQ[i].g));
+    if(target.length){
+      const cost=Math.min(...target.map(upCost));
+      const lone=propsOf(p).filter(i=>canMortgage(i)&&(SQ[i].t==='u'||!ownsGroup(p,SQ[i].g))).sort((a,b)=>SQ[a].price-SQ[b].price);
+      for(let k=0;k<2&&lone.length&&p.cash<cost+df().build;k++)mortgage(lone.shift());
+    }
+  }
   for(let n=0;n<20;n++){
     const o=propsOf(p).filter(i=>canUpgrade(p,i)&&p.cash-upCost(i)>=df().build).sort((a,b)=>S.own[a].level-S.own[b].level||upCost(a)-upCost(b));
     if(!o.length)break;upgrade(o[0]);
@@ -1134,6 +1167,23 @@ function cpuManage(p){
 async function cpuSeekTrade(p){
   S.asked=S.asked||{};
   if(Math.random()>df().trade) return;
+  // vende a caro prezzo un circuito che completa il gruppo di un avversario, se è a corto di soldi
+  if(p.cash<220){
+    for(const i of tradable(p)){const q=S.players.find(x=>x!==p&&!x.out&&completesFor(x,i));if(!q)continue;
+      const key='s'+p.id+'-'+i;if(S.asked[key]&&S.round-S.asked[key]<5)continue;S.asked[key]=S.round;
+      const price=r10(SQ[i].price*(2.3+Math.random()*.6));if(q.cash<price)continue;
+      const offer=blankOffer(p.id,q.id);offer.give=[i];offer.cashGet=price;
+      if(RU().under&&Math.random()<.5)offer.royGive={pct:[20,30,40][Math.floor(Math.random()*3)],turns:2};
+      await negotiate(offer);render();await wait(400);return;}
+  }
+  // patto di non belligeranza con chi ha i diritti più pericolosi
+  if(RU().under&&Math.random()<.2&&p.cash>300){
+    const q=rivals(p).filter(x=>rentPower(x)>rentPower(p)*1.6&&!pactActive(p.id,x.id)).sort((a,b)=>rentPower(b)-rentPower(a))[0];
+    const key='p'+p.id+'-'+(q&&q.id);
+    if(q&&!(S.asked[key]&&S.round-S.asked[key]<6)){S.asked[key]=S.round;
+      const offer=blankOffer(p.id,q.id);offer.pact=2;offer.cashGive=r10(Math.min(p.cash-200,rentPower(q)*.35+60));
+      if(offer.cashGive>0){await negotiate(offer);render();await wait(400);return;}}
+  }
   for(const g of Object.keys(G)){
     if(groupHasUpgrades(g)) continue;
     const idx=groupIdx(g),mine=idx.filter(i=>S.own[i]&&S.own[i].owner===p.id);
@@ -1251,9 +1301,21 @@ function paintEditor(err=''){
       <div class="cl">${esc(b.name)} ${T('tiene il','keeps')} ${sel('rr',PCTS,o.royGet.pct,v=>v+'%')} ${T('su ciò che ti cede per','on what you get for')} ${sel('rrt',[1,2,3],o.royGet.turns,v=>v+T(' giri',' laps'))}</div>
       <div class="cl">${T('Patto di non belligeranza','Non-aggression pact')} ${sel('pc',[0,1,2,3],o.pact,v=>v?v+T(' giri',' laps'):T('no','none'))}</div>
     </div>`:''}
+    ${tradeMeter(o)}
     ${err?`<p style="color:var(--red);font-weight:700">${err}</p>`:''}
     <div class="row"><button class="btn primary" data-act="tr-send">${T('Invia','Send')}</button><button class="btn out" data-act="tr-cancel">${TR.locked?T('Rifiuta','Decline'):T('Annulla','Cancel')}</button></div>`,false,true);
 }
+function tradeMeter(o){
+  if(!o.give.length&&!o.get.length&&!o.cashGive&&!o.cashGet&&!o.pact)return '';
+  const me=cpuEval(invert(o)),bal=me.gain-me.loss,scale=Math.max(150,me.gain+me.loss);
+  const x=Math.max(-1,Math.min(1,bal/scale));
+  const label=x>.15?T('A tuo favore','In your favour'):x<-.15?T('A suo favore','In their favour'):T('Equilibrato','Balanced');
+  const R=P(o.to);let odds='';
+  if(R.cpu){const e=cpuEval(o),need=e.loss*df().accept+5,r=e.gain/(need||1);
+    odds=r>=1?T('🟢 Probabile che accetti','🟢 Likely to accept'):r>=.8?T('🟡 Potrebbe fare una controfferta','🟡 May counter'):T('🔴 Probabile che rifiuti','🔴 Likely to refuse');}
+  return `<div class="meter"><div class="mbar"><span class="mfill ${x<0?'neg':'pos'}" style="--x:${Math.abs(x)*50}%"></span><i></i></div><div class="mtxt"><b>${label}</b>${odds?`<span>${odds}</span>`:''}</div></div>`;
+}
+document.addEventListener('change',e=>{if(TR&&e.target&&['rg','rgt','rr','rrt','pc'].includes(e.target.id)){readSelects();paintEditor();}});
 function readSelects(){
   const o=TR.o,v=id=>{const e=$('#'+id);return e?+e.value:0;};
   o.royGive={pct:v('rg'),turns:v('rgt')||2};o.royGet={pct:v('rr'),turns:v('rrt')||2};o.pact=v('pc');
