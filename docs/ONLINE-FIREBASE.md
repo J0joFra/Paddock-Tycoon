@@ -18,7 +18,7 @@ gli altri inviano solo le proprie mosse. Le stanze vivono in `pt/rooms/<CODICE>`
 
 ## 2. Inserisci la configurazione nel gioco
 Mandala a Claude, oppure fai da te:
-1. In `src/game.html` sostituisci `const FIREBASE_CONFIG=null;` con l'oggetto copiato, per esempio
+1. In `src/js/21-online.js` sostituisci `const FIREBASE_CONFIG=null;` con l'oggetto copiato, per esempio
    `const FIREBASE_CONFIG={apiKey:"…",authDomain:"…",databaseURL:"https://….europe-west1.firebasedatabase.app",projectId:"…",appId:"…"};`
 2. `python3 tools/build.py`, aumenta `CACHE` in `sw.js`, commit e push.
 

@@ -62,11 +62,20 @@ e bloccato in orizzontale grazie a `manifest.webmanifest`. In verticale il gioco
 
 - App Android: `npm ci`, `python3 tools/build.py --native`, `npx cap sync android`, poi `android/` si apre con Android Studio (oppure lascia fare a GitHub Actions).
 
-- Il gioco è un unico file: **`src/game.html`** (stili, markup e script).
-- `python3 tools/build.py` genera `index.html` aggiungendo l'intestazione della web app (`tools/head.html`).
-- Dopo ogni modifica: build, poi aumenta la versione di `CACHE` in `sw.js` così i telefoni scaricano l'aggiornamento.
+- Il codice è diviso per argomento:
+  - `src/head.html`, `src/style.css`, `src/body.html`: intestazione, stili e struttura della pagina;
+  - `src/js/NN-nome.js`: gli script, caricati in ordine numerico (lingua, dati, tracciati, regole, stato, suoni,
+    preferenze, musica, economia, schede, movimento, aste, turni, CPU, trattative, dadi, disegno, setup, menu,
+    online, Play Games, tutorial, eventi, tasto indietro, avvio).
+- `python3 tools/build.py` li unisce in un unico file `dist/game.html` e genera `index.html` (web app, con `tools/head.html`);
+  `--native` crea anche `www/` per l'app Android.
+- Test automatici (browser vero con Playwright): `npm ci`, `npx playwright install chromium`, poi `npm test`.
+  Coprono partite complete tra CPU con controlli di coerenza (soldi, proprietà, tribune, ipoteche), regole della casa,
+  campionato, inglese, sfida del giorno riproducibile, partita online tra due schede con subentro della CPU e Play Games simulato.
+  `GAMES=10 npm test` gioca più partite. Girano anche su GitHub Actions a ogni push (`.github/workflows/test.yml`).
+- Dopo ogni modifica: build, test, poi aumenta la versione di `CACHE` in `sw.js` così i telefoni scaricano l'aggiornamento.
 - `tools/mktracks.py` rigenera i tracciati dal dataset open source.
-- Online: configurazione in `FIREBASE_CONFIG` dentro `src/game.html`, regole in `database.rules.json`. Per provare senza Firebase, in console del browser: `localStorage.setItem('paddock-tycoon-localnet','1')` e apri due schede dello stesso sito.
+- Online: configurazione in `FIREBASE_CONFIG` in `src/js/21-online.js`, regole in `database.rules.json`. Per provare senza Firebase, in console del browser: `localStorage.setItem('paddock-tycoon-localnet','1')` e apri due schede dello stesso sito.
 
 ## Pubblicazione
 

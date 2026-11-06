@@ -1,0 +1,35 @@
+
+<main class="app">
+  <div class="boardcol"><div class="board" id="board"></div></div>
+  <aside class="side">
+    <div class="bar">
+      <div class="logo"><span class="mark"></span><span>Paddock <b>Tycoon</b></span></div>
+      <div class="icons">
+        <button class="ib" data-act="sound" id="sndbtn" aria-label="Audio"></button>
+        <button class="ib" data-act="fullscreen" id="fsbtn" aria-label="Schermo intero"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        <button class="ib" data-act="rules" aria-label="Regole">?</button>
+        <button class="ib" data-act="pause" aria-label="Pausa e menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h14"/></svg></button>
+      </div>
+    </div>
+    <div class="tower" id="tower"></div>
+    <section class="act" id="actions"></section>
+    <button class="ticker" id="ticker" data-act="log"></button>
+  </aside>
+</main>
+<button class="tab" id="tab" data-act="trade" hidden>🤝 Affari</button>
+
+<div class="rotate">
+  <div class="phone" aria-hidden="true"></div>
+  <h2>Gira il telefono</h2>
+  <button class="btn primary" data-act="fullscreen">Gioca in orizzontale</button>
+</div>
+
+<div class="netpill" id="netpill" hidden></div>
+<div class="toast" id="toast" hidden role="status"></div>
+<div class="fx" id="fx"></div>
+<canvas id="confetti" hidden></canvas>
+
+<div class="menu" id="menu" hidden></div>
+
+<div class="backdrop" id="backdrop" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+

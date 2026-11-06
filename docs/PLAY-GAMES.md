@@ -44,7 +44,7 @@ Poi in GitHub → repository → **Settings → Secrets and variables → Action
 
 ## 4. Obiettivi e classifiche da creare
 In **Play Games Services → Obiettivi** e **→ Classifiche** crea questi elementi, poi copia gli ID (es. `CgkI...`) e mandali a Claude:
-vanno in `PGS_IDS` dentro `src/game.html`.
+vanno in `PGS_IDS` in `src/js/22-playgames.js`.
 
 ### Obiettivi
 | Chiave | Nome (IT) | Descrizione (IT) | Name (EN) | Description (EN) | Punti |

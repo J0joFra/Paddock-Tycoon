@@ -7,3 +7,4 @@ android/local.properties
 *.keystore
 *.jks
 signing-key-info.txt
+dist/
