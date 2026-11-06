@@ -1659,7 +1659,15 @@ function resumeSaved(){
 // ================= Online (Firebase Realtime Database) =================
 // Incolla qui la configurazione web del progetto Firebase (Impostazioni progetto → Le tue app → Configurazione SDK).
 // Finché resta null, il pulsante Online spiega che la modalità non è ancora attiva.
-const FIREBASE_CONFIG=null;
+const FIREBASE_CONFIG={
+  apiKey:"AIzaSyCLcAxBZWeidBHnjINKLqQqyANEJtH797Q",
+  authDomain:"paddock-tycoon-27cf2.firebaseapp.com",
+  databaseURL:"https://paddock-tycoon-27cf2-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"paddock-tycoon-27cf2",
+  storageBucket:"paddock-tycoon-27cf2.firebasestorage.app",
+  messagingSenderId:"708573255384",
+  appId:"1:708573255384:web:c28914dad0d8e6685be9ad"
+};
 const FB_VER='10.12.2';
 const NAME_KEY='paddock-tycoon-name',KEY_ON='paddock-tycoon-online',LAST_ROOM='paddock-tycoon-lastroom';
 const BAD_NAME=/(cazz|merd|stronz|puttan|troia|vaffan|coglion|frocio|negr|fuck|shit|bitch|cunt|nigg|fagg|porn|dick|pussy|hitler|nazi)/i;
