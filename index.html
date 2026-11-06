@@ -434,6 +434,9 @@ body{overflow:hidden;box-sizing:border-box;padding-block:6px;padding-right:max(3
 .mfill.pos{left:50%;background:var(--green)}
 .mfill.neg{right:50%;background:var(--red)}
 .mtxt{display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:700;flex-wrap:wrap}
+/* Sfida del giorno */
+.daily{display:grid;gap:6px;background:var(--surface-2);border-radius:12px;padding:10px}
+.daily .ptile{background:var(--surface)}
 /* Logo */
 .brandlogo{display:block;height:auto;font-style:normal;font-weight:400;filter:drop-shadow(0 6px 10px rgba(21,23,28,.18))}
 .center .brand .brandlogo{width:clamp(110px,31vmin,250px)}
@@ -636,8 +639,14 @@ const wait=ms=>{const g=GEN;return new Promise(r=>setTimeout(()=>{if(g===GEN)r()
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>'€'+n+'M';
-const rnd6=()=>1+Math.floor(Math.random()*6);
-const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+// Generatore casuale della logica di gioco: Math.random di solito, con seme nella sfida del giorno
+let RNG=Math.random;
+const rand=()=>RNG();
+function seeded(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function setRng(seed,n=0){if(seed==null){RNG=Math.random;return;}const g=seeded(seed);for(let i=0;i<n;i++)g();RNG=()=>{if(S)S.rngN=(S.rngN||0)+1;return g();};}
+const rnd6=()=>1+Math.floor(rand()*6);
+const vis6=()=>1+Math.floor(Math.random()*6);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(rand()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
 const cur=()=>S.players[S.turn];
 const P=id=>S.players[id];
 const rivals=p=>S.players.filter(o=>o!==p&&!o.out);
@@ -834,7 +843,7 @@ function rentOf(i){
 }
 function pickWeekend(){
   const cs=SQ.map((s,i)=>i).filter(i=>SQ[i].t==='c');
-  S.weekend=cs[Math.floor(Math.random()*cs.length)];
+  S.weekend=cs[Math.floor(rand()*cs.length)];
   log(T(`🏁 GP del weekend: ${SQ[S.weekend].name} · diritti ×2`,`🏁 Weekend GP: ${SQ[S.weekend].name} · fees ×2`));
 }
 const st=id=>(S.stats=S.stats||{})[id]||(S.stats[id]={rent:0,deals:0,built:0});
@@ -1000,7 +1009,7 @@ function cpuMaxBid(p,i){
     if(mine===idx.length-1) v*=1.8; else if(mine>0) v*=1.3;
     if(S.players.some(o=>o!==p&&!o.out&&idx.filter(j=>S.own[j]&&S.own[j].owner===o.id).length===idx.length-1)) v*=1.35;
   }
-  return Math.min(Math.floor(v*df().bid*(.85+Math.random()*.3)),p.cash-60);
+  return Math.min(Math.floor(v*df().bid*(.85+rand()*.3)),p.cash-60);
 }
 async function auction(i){
   const sq=SQ[i];
@@ -1023,7 +1032,7 @@ async function auction(i){
       openSheet(view(p,false),false);await wait(650);
       if(max[pid]===undefined) max[pid]=cpuMaxBid(p,i);
       const room=max[pid]-bid;
-      c= room>=10 ? (room>150&&Math.random()<.4?'50':'10') : 'pass';
+      c= room>=10 ? (room>150&&rand()<.4?'50':'10') : 'pass';
     } else {if(NET.on&&!isMine(p))openSheet(view(p,false),false);c=await ask(view(p,true),p,'pass');}
     if(c==='pass'){ids.splice(k%ids.length,1);log(T(`${p.name} passa`,`${p.name} passes`));sfx('no');}
     else{bid+=+c;leader=pid;k++;sfx('bid');}
@@ -1109,7 +1118,7 @@ async function startTurn(){
     else if(c==='pay'){p.cash-=STOPGO_FEE;if(RU().pot)S.pot=(S.pot||0)+STOPGO_FEE;sfx('pay');log(T(`${p.name} paga lo Stop & Go`,`${p.name} pays the Stop & Go`));S.phase='roll';}
     else if(c==='bribe'){
       p.cash-=BRIBE;if(RU().pot)S.pot=(S.pot||0)+BRIBE;sfx('pay');
-      if(Math.random()<.5){if(mineHuman(p))pgsAch('bribe');setMsg(T('🕶️ Commissari corrotti: si riparte!','🕶️ Stewards bribed: back on track!'),'good');log(T(`${p.name} corrompe i commissari`,`${p.name} bribes the stewards`));S.phase='roll';sfx('deal');}
+      if(rand()<.5){if(mineHuman(p))pgsAch('bribe');setMsg(T('🕶️ Commissari corrotti: si riparte!','🕶️ Stewards bribed: back on track!'),'good');log(T(`${p.name} corrompe i commissari`,`${p.name} bribes the stewards`));S.phase='roll';sfx('deal');}
       else{setMsg(T('🕶️ Bustarella scoperta! Turno saltato','🕶️ Bribe exposed! Turn skipped'),'warn');log(T(`${p.name} scoperto a corrompere i commissari`,`${p.name} caught bribing the stewards`));S.phase='end';sfx('siren');}
     }
     else{setMsg(T(`${p.name} sconta lo Stop & Go`,`${p.name} serves the Stop & Go`),'warn');log(T(`${p.name} salta il turno`,`${p.name} skips a turn`));S.phase='end';}
@@ -1123,7 +1132,7 @@ async function startTurn(){
 // ================= CPU =================
 function cpuStopGo(p){
   if(p.flags>0) return 'flag';
-  if(p.cash>=400&&Math.random()<.25) return 'bribe';
+  if(p.cash>=400&&rand()<.25) return 'bribe';
   if(p.cash>=250) return 'pay';
   return 'skip';
 }
@@ -1166,18 +1175,18 @@ function cpuManage(p){
 }
 async function cpuSeekTrade(p){
   S.asked=S.asked||{};
-  if(Math.random()>df().trade) return;
+  if(rand()>df().trade) return;
   // vende a caro prezzo un circuito che completa il gruppo di un avversario, se è a corto di soldi
   if(p.cash<220){
     for(const i of tradable(p)){const q=S.players.find(x=>x!==p&&!x.out&&completesFor(x,i));if(!q)continue;
       const key='s'+p.id+'-'+i;if(S.asked[key]&&S.round-S.asked[key]<5)continue;S.asked[key]=S.round;
-      const price=r10(SQ[i].price*(2.3+Math.random()*.6));if(q.cash<price)continue;
+      const price=r10(SQ[i].price*(2.3+rand()*.6));if(q.cash<price)continue;
       const offer=blankOffer(p.id,q.id);offer.give=[i];offer.cashGet=price;
-      if(RU().under&&Math.random()<.5)offer.royGive={pct:[20,30,40][Math.floor(Math.random()*3)],turns:2};
+      if(RU().under&&rand()<.5)offer.royGive={pct:[20,30,40][Math.floor(rand()*3)],turns:2};
       await negotiate(offer);render();await wait(400);return;}
   }
   // patto di non belligeranza con chi ha i diritti più pericolosi
-  if(RU().under&&Math.random()<.2&&p.cash>300){
+  if(RU().under&&rand()<.2&&p.cash>300){
     const q=rivals(p).filter(x=>rentPower(x)>rentPower(p)*1.6&&!pactActive(p.id,x.id)).sort((a,b)=>rentPower(b)-rentPower(a))[0];
     const key='p'+p.id+'-'+(q&&q.id);
     if(q&&!(S.asked[key]&&S.round-S.asked[key]<6)){S.asked[key]=S.round;
@@ -1194,13 +1203,13 @@ async function cpuSeekTrade(p){
     if(S.asked[key]&&S.round-S.asked[key]<4) continue;
     S.asked[key]=S.round;
     const swap=tradable(p).find(i=>{const s=SQ[i];return s.g&&s.g!==g&&groupIdx(s.g).every(k=>k===i||(S.own[k]&&S.own[k].owner===q.id));});
-    const cash=r10(SQ[j].price*(1.6+Math.random()*.6));
+    const cash=r10(SQ[j].price*(1.6+rand()*.6));
     if(swap===undefined&&p.cash-cash<200) continue;
     const offer=blankOffer(p.id,q.id);
     offer.get=[j];
     if(swap!==undefined) offer.give=[swap]; else offer.cashGive=cash;
     // tocco "corrotto": a volte offre un patto o una percentuale
-    if(RU().under&&Math.random()<.35) offer.pact=1+Math.floor(Math.random()*2);
+    if(RU().under&&rand()<.35) offer.pact=1+Math.floor(rand()*2);
     await negotiate(offer);
     render();await wait(400);
     return;
@@ -1267,7 +1276,7 @@ function cpuRespond(o){
   const c=invert(o);
   if(c.cashGive>0){const red=Math.min(c.cashGive,deficit);c.cashGive-=red;const rest=deficit-red;if(rest>0)c.cashGet+=rest;}
   else c.cashGet+=deficit;
-  if(c.cashGet<=A.cash&&deficit<1500&&Math.random()<.85) return {type:'counter',offer:c,line:T('Così non ci sto. Facciamo così:',"Not like that. Here's my offer:")};
+  if(c.cashGet<=A.cash&&deficit<1500&&rand()<.85) return {type:'counter',offer:c,line:T('Così non ci sto. Facciamo così:',"Not like that. Here's my offer:")};
   if(RU().under&&c.give.length&&!c.royGive.pct){const c2=invert(o);c2.royGive={pct:50,turns:3};if(cpuEval(invert(c2)).gain>=0) return {type:'counter',offer:c2,line:T('Niente soldi? Allora mi tengo il 50% dei diritti per 3 giri.',"No cash? Then I keep 50% of the fees for 3 laps.")};}
   return {type:'reject'};
 }
@@ -1375,7 +1384,7 @@ async function animateDice(a,b,remote){
   if(!remote&&NET.on&&NET.host)hostFx({n:'dice',a,b});
   const d1=$('#d1'),d2=$('#d2');sfx('dice');
   d1.classList.add('rolling');d2.classList.add('rolling');
-  for(let k=0;k<8;k++){d1.innerHTML=dieHTML(rnd6());d2.innerHTML=dieHTML(rnd6());await wait(55);}
+  for(let k=0;k<8;k++){d1.innerHTML=dieHTML(vis6());d2.innerHTML=dieHTML(vis6());await wait(55);}
   d1.classList.remove('rolling');d2.classList.remove('rolling');
   d1.innerHTML=dieHTML(a);d2.innerHTML=dieHTML(b);
 }
@@ -1679,6 +1688,7 @@ function showRules(){
     ['🌐 Online','Stanza con codice per gli amici o partita casuale. Se qualcuno si disconnette guida la CPU finché non rientra.'],
     ['🏆 Campionato','3 o 5 gare a giri contati. Punti per l\'ordine d\'arrivo: 25-18-15-12-10-8. L\'ultima gara vale doppio.'],
     ['⚖️ Regole della casa','Nella griglia di partenza: soldi iniziali, aste, accordi sotto banco e montepremi attivabili o no.'],
+    ['📅 Sfida del giorno','Ogni giorno una partita uguale per tutti: tu contro 3 CPU per 15 giri, partenza con 2 circuiti a testa. Conta il patrimonio finale.'],
     ['🏁 Fine','Ultimo in gara, oppure patrimonio più alto a fine giri.']],[['🏎️ Pole position','At the start everyone rolls the dice: the highest starts first.'],['🎲 Lap',`2 dice, +${fmt(LAP_BONUS)} when you pass GO. Double = roll again; 3 doubles = Stop & Go.`],
     ['🏟️ Circuits','Buy it or send it to auction. Full colour group = fees ×2.'],
     ['🏗️ Grandstands and GP','With the full group: up to 3 grandstands, then the Grand Prix.'],
@@ -1694,6 +1704,7 @@ function showRules(){
     ['🌐 Online','Room code for friends or a random match. If someone disconnects, the CPU drives for them until they rejoin.'],
     ['🏆 Championship','3 or 5 races with a lap limit. Points by finishing order: 25-18-15-12-10-8. The last race counts double.'],
     ['⚖️ House rules','In the starting grid: starting cash, auctions, under-the-table deals and jackpot can be switched on or off.'],
+    ['📅 Daily challenge','Every day the same game for everyone: you vs 3 CPUs for 15 laps, each starting with 2 circuits. Final net worth is your score.'],
     ['🏁 Finish','Last driver standing, or highest net worth when the laps run out.']]);
   openSheet(`<h2>${T('Regolamento','Rules')}</h2><div class="rules">${R.map(([t,d])=>`<div><b>${t}</b>${d}</div>`).join('')}</div><p style="font-size:11px">${T('Tracciati disegnati da dati open source di Tomislav Bacinger (github.com/bacinger/f1-circuits, licenza MIT). Gioco di fantasia: nomi dei circuiti inventati, nessun legame con campionati, squadre o circuiti reali.','Track layouts drawn from open-source data by Tomislav Bacinger (github.com/bacinger/f1-circuits, MIT licence). A work of fiction: circuit names are invented and not affiliated with any real championship, team or circuit.')}</p><div class="row"><button class="btn primary" data-act="tutorial">🎓 ${T('Tutorial guidato','Guided tutorial')}</button><button class="btn dark" data-act="close">${T('Chiudi','Close')}</button></div>`);
 }
@@ -1747,9 +1758,10 @@ function showGameOver(){
   }
   openSheet(`<h2>🏁 ${T(`${esc(r[0].name)} campione!`,`${esc(r[0].name)} is the champion!`)}</h2>
     <div class="rank">${r.map((p,k)=>`<div><span class="pos">${k+1}</span><span>${tok(p)} ${esc(p.name)}${p.out?' · out':''}</span><b>${fmt(netWorth(p))}</b></div>`).join('')}</div>
+    ${S.daily?showDailyResult():''}
     ${chartHTML()}
     ${awards()}
-    <div class="row">${NET.on?(NET.host?`<button class="btn primary" data-act="orematch">${T('Rivincita','Rematch')}</button>`:''):`<button class="btn primary" data-act="setup">${T('Rivincita','Rematch')}</button>`}<button class="btn dark" data-act="home">🏠 Menu</button></div>`);
+    <div class="row">${S.daily?`<button class="btn primary" data-act="daily">🔁 ${T('Riprova la sfida','Retry the challenge')}</button>`:''}${NET.on?(NET.host?`<button class="btn primary" data-act="orematch">${T('Rivincita','Rematch')}</button>`:''):`${S.daily?'':`<button class="btn primary" data-act="setup">${T('Rivincita','Rematch')}</button>`}`}<button class="btn dark" data-act="home">🏠 Menu</button></div>`);
 }
 
 // ================= Setup =================
@@ -1809,6 +1821,31 @@ async function chooseOrder(){
   closeSheet();
   return w.id;
 }
+const DAILY_KEY='paddock-tycoon-daily';
+const todayStr=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+const dailySeed=ds=>[...('PT'+ds)].reduce((h,c)=>Math.imul(h^c.charCodeAt(0),16777619)>>>0,2166136261);
+function dailyRec(){try{return JSON.parse(lsGet(DAILY_KEY))||{};}catch(e){return {};}}
+let DAILY_PENDING=null,SETUP_BAK=null;
+function startDaily(){
+  const date=todayStr();
+  SETUP_BAK=JSON.parse(JSON.stringify(setup));
+  setup.mode='single';setup.limit=15;setup.diff='normal';setup.rules={cash:START_CASH,auction:true,under:true,pot:true};
+  setup.players=[{name:lsGet(NAME_KEY)||T('Tu','You'),cpu:false,color:COLORS[0],helmet:(setup.players[0]&&setup.players[0].helmet)||0},
+    {name:'CPU Alfa',cpu:true,color:COLORS[1]},{name:'CPU Bravo',cpu:true,color:COLORS[2]},{name:'CPU Charlie',cpu:true,color:COLORS[3]}];
+  DAILY_PENDING={date,seed:dailySeed(date)};
+  startGame(null);
+}
+function showDailyResult(){
+  const d=S.daily,me=S.players.find(mineHuman);if(!d||!me)return '';
+  const score=me.out?0:netWorth(me),pos=ranking().indexOf(me)+1;
+  const rec=dailyRec(),r=rec[d.date]||{best:0,pos:9,tries:0};
+  if(!S.dailySaved){S.dailySaved=true;r.tries++;if(score>r.best){r.best=score;r.pos=pos;}rec[d.date]=r;
+    const keys=Object.keys(rec).sort();while(keys.length>30)delete rec[keys.shift()];lsSet(DAILY_KEY,JSON.stringify(rec));save();}
+  const share=T(`Paddock Tycoon · Sfida del giorno ${d.date}: ${fmt(score)} (${pos}° posto)`,`Paddock Tycoon · Daily challenge ${d.date}: ${fmt(score)} (P${pos})`);
+  return `<div class="daily"><h3>📅 ${T('Sfida del giorno','Daily challenge')} · ${d.date}</h3>
+    <div class="ptiles"><div class="ptile"><small>${T('Questa partita','This run')}</small><b>${fmt(score)}</b></div><div class="ptile"><small>${T('Record di oggi','Today\'s best')}</small><b>${fmt(r.best)}</b></div><div class="ptile"><small>${T('Tentativi','Attempts')}</small><b>${r.tries}</b></div></div>
+    <div class="joinrow"><input type="text" readonly id="dshare" value="${esc(share)}" aria-label="${T('Risultato','Result')}"><button class="btn sm" data-act="dcopy">📋 ${T('Copia','Copy')}</button></div></div>`;
+}
 async function startGame(champ=null){
   hideMenu();musicStop();GEN++;
   syncNames();
@@ -1823,6 +1860,13 @@ async function startGame(champ=null){
     deck:shuffle([...CARDS.keys()]),deckPos:0,log:[],msg:null,over:false,pending:null,asked:{},
     pot:0,weekend:null,stats:{},first:0,fast:setup.fast,cpuFast:setup.cpuFast,diff:setup.diff,autoEnd:setup.autoEnd,rules:{...setup.rules},hist:[],champ};
   if(champ) S.limit=champ.limit;
+  if(DAILY_PENDING){
+    S.daily=DAILY_PENDING;DAILY_PENDING=null;S.rngN=0;setRng(S.daily.seed,0);
+    S.deck=shuffle([...CARDS.keys()]);
+    const free=shuffle(SQ.map((q,i)=>i).filter(i=>SQ[i].t==='c'));
+    S.players.forEach((p,k)=>{for(const i of free.slice(k*2,k*2+2))S.own[i]={owner:p.id,level:0,mort:false};});
+    if(SETUP_BAK){Object.assign(setup,SETUP_BAK);SETUP_BAK=null;}
+  }else setRng(null);
   S.phase='order';
   $('#cars').innerHTML='';for(const k in carRot)delete carRot[k];for(const k in prevCash)delete prevCash[k];
   closeSheet();render();
@@ -1844,6 +1888,7 @@ function showMenu(){
       ${can?`<button class="btn primary mbig" data-act="resume">▶ ${T('Continua','Continue')} <small>${sv.champ?esc(sv.champ.names[sv.champ.idx])+' · ':''}${T('giro','lap')} ${sv.round} ${who}</small></button>`:''}
       <button class="btn ${can?'dark':'primary mbig'}" data-act="newsingle">🏁 ${T('Partita veloce','Quick game')}</button>
       <button class="btn dark" data-act="newchamp">🏆 ${T('Campionato','Championship')}</button>
+      <button class="btn dark" data-act="daily">📅 ${T('Sfida del giorno','Daily challenge')} <small>${(()=>{const r=dailyRec()[todayStr()];return r?T('record ','best ')+fmt(r.best):T('nuova!','new!');})()}</small></button>
       ${lsGet(KEY_ON)?`<button class="btn dark" data-act="resumeon">↩︎ ${T('Riprendi partita online','Resume online game')}</button>`:''}
       <button class="btn dark" data-act="online">🌐 ${T('Online','Online')} <small>${T('amici o casuale','friends or random')}</small></button>
       <button class="btn" data-act="learn">🎓 ${T('Impara a giocare','How to play')}</button>
@@ -1911,7 +1956,7 @@ function quitToMenu(discard){
 function resumeSaved(){
   const saved=loadSaved();if(!saved||!saved.players||saved.over){showMenu();return;}
   hideMenu();musicStop();GEN++;
-  S=saved;busy=false;cpuActive=false;S.roys=S.roys||[];S.pacts=S.pacts||[];S.pot=S.pot||0;S.stats=S.stats||{};S.first=S.first||0;S.hist=S.hist||[];
+  S=saved;busy=false;cpuActive=false;setRng(S.daily?S.daily.seed:null,S.rngN||0);S.roys=S.roys||[];S.pacts=S.pacts||[];S.pot=S.pot||0;S.stats=S.stats||{};S.first=S.first||0;S.hist=S.hist||[];
   if(S.champ){setup.mode=S.champ.n===5?'c5':'c3';setup.climit=S.champ.limit;}else setup.mode='single';
   setup.fast=!!S.fast;setup.diff=S.diff||'normal';setup.limit=S.limit||0;setup.autoEnd=S.autoEnd!==false;setup.rules=Object.assign({cash:START_CASH,auction:true,under:true,pot:true},S.rules||{});
   setup.players=S.players.map(p=>({name:p.name,cpu:p.cpu,color:p.color,helmet:p.helmet||0}));
@@ -2419,6 +2464,8 @@ const ACT={
   nextrace:()=>{const c=S.champ;if(!c||c.idx>=c.n-1)return;c.idx++;startGame(c);},
   tutorial:()=>{closeSheet();tutorial();},
   settings:()=>showSettings(),profile:()=>showProfile(),
+  daily:()=>{closeSheet();if(S&&!S.over&&!S.daily&&!NET.on){save();}if(NET.on)netLeave(true);S=null;startDaily();},
+  dcopy:()=>{const el=$('#dshare');if(!el)return;const ok=()=>{el.select();};try{navigator.clipboard.writeText(el.value).then(()=>{sfx('coin');toast(T('Copiato','Copied'));},ok);}catch(e){ok();}},
   pref:b=>{const k=b.dataset.k;PREFS[k]=b.dataset.v==='true';savePrefs();applyPrefs();if(k==='gameMusic'){if(PREFS.gameMusic)musicStart();else if(MUSIC.track==='game')musicStop(.4);}showSettings();},
   ffwd:()=>{if(isGuest())return;TURBO=!TURBO;render();},
   pgsach:()=>pgsShow('ach'),pgslb:()=>pgsShow('lb'),
@@ -2456,7 +2503,7 @@ const ACT={
   col:b=>{syncNames();const p=setup.players[+b.dataset.i],used=setup.players.map(x=>x.color);let k=COLORS.indexOf(p.color);for(let n=0;n<6;n++){k=(k+1)%6;if(!used.includes(COLORS[k]))break;}p.color=COLORS[k];showSetup();},
 };
 function after(b){save();render();if(b.dataset.ctx==='info')showInfo(+b.dataset.i);else showManage();}
-const NO_GAME_OK=['hrules','rule','profile','settings','pref','helm','ffwd','pgsach','pgslb','qjoin','qnew','qback','online','resumeon','quick','create','join','rejoin','copylink','addcpu','rmcpu','cpustart','ostart','oleave','orematch','lang','music','pause','home','menu','tomenu','abandon','doabandon','resume','newsingle','newchamp','learn','fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info','diff','autoend','cpufast','mode','climit','tutorial'];
+const NO_GAME_OK=['daily','dcopy','hrules','rule','profile','settings','pref','helm','ffwd','pgsach','pgslb','qjoin','qnew','qback','online','resumeon','quick','create','join','rejoin','copylink','addcpu','rmcpu','cpustart','ostart','oleave','orematch','lang','music','pause','home','menu','tomenu','abandon','doabandon','resume','newsingle','newchamp','learn','fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info','diff','autoend','cpufast','mode','climit','tutorial'];
 document.addEventListener('pointerdown',()=>{MUSIC.unlockedAt=performance.now();ac();setTimeout(musicStart,30);},{once:true});
 document.addEventListener('click',e=>{
   const c=e.target.closest('[data-choice]');
