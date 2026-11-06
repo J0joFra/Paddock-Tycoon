@@ -5,6 +5,9 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 
 ## Come si gioca
 
+- **Durata**: 12, 20 (predefinita) o 30 giri, oppure fino all'ultimo in gara. **Fine turno automatico** attivabile nella griglia di partenza.
+- Quando compri, il gioco ti segnala se completi un gruppo o se blocchi un avversario; la scheda di un circuito mostra i proprietari del suo gruppo.
+
 - **Italiano e inglese**: la lingua segue quella del telefono e si cambia dal menu principale.
 
 - **Menu principale** con Continua, Partita veloce, Campionato, Impara a giocare e Regolamento; in partita il pulsante ≡ apre la pausa per tornare al menu (la partita resta salvata) o abbandonarla.
@@ -31,7 +34,6 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 - **Campionato**: 3 o 5 gare da 8, 12 o 15 giri, con punti per piazzamento (25-18-15-12-10-8) e ultima gara a punti doppi. Tra una gara e l'altra: ordine d'arrivo e classifica piloti.
 - **Tutorial guidato** alla prima partita, che evidenzia passo passo le parti dello schermo; si può rivedere dal Regolamento.
 - **Tracciati veri**: toccando un circuito si vede il suo tracciato reale disegnato, con bandiera di partenza e una monoposto che gira; miniature anche all'acquisto, all'asta e su ogni casella del tabellone, colorate come il proprietario (grigie se libere, tratteggiate se ipotecate).
-- **Scuderie**: ogni pilota ha un vantaggio (💰 Sponsor d'oro, 🔧 Ingegneri, ⚖️ Avvocati, 📣 Marketing, 🪽 Aerodinamica). Si sceglie toccando l'icona nella griglia di partenza.
 - **Difficoltà CPU**: Facile, Normale o Squalo.
 - **Strozzino del paddock**: prestiti fino a €300M da restituire +30% entro 3 giri, altrimenti riscuote con la mora.
 - 23 carte Radio Box, suono del motore che sale di giri a ogni passo, schermo sempre acceso durante la partita.
@@ -53,6 +55,13 @@ Il regolamento completo è nel gioco, pulsante **Regole**.
 Sul telefono, aggiungendo il sito alla schermata Home (Android: menu → *Installa app*;
 iPhone: Condividi → *Aggiungi alla schermata Home*) il gioco si apre a schermo intero
 e bloccato in orizzontale grazie a `manifest.webmanifest`. In verticale il gioco chiede di ruotare il telefono.
+
+## Sviluppo
+
+- Il gioco è un unico file: **`src/game.html`** (stili, markup e script).
+- `python3 tools/build.py` genera `index.html` aggiungendo l'intestazione della web app (`tools/head.html`).
+- Dopo ogni modifica: build, poi aumenta la versione di `CACHE` in `sw.js` così i telefoni scaricano l'aggiornamento.
+- `tools/mktracks.py` rigenera i tracciati dal dataset open source.
 
 ## Pubblicazione
 

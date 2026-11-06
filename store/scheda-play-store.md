@@ -38,11 +38,9 @@ Gioca 3 o 5 gare con punti per l'ordine d'arrivo e la finale a punti doppi. Clas
 🔨 ASTE, IPOTECHE E BANCAROTTA
 Se nessuno compra, si va all'asta. Se non puoi pagare, ipoteca e smonta tribune: perdi solo quando non ti resta nulla.
 
-🏎️ SCUDERIE CON ABILITÀ
-Sponsor d'oro, Ingegneri, Avvocati, Marketing, Aerodinamica: ogni scuderia ha un vantaggio diverso.
-
 🎲 E IN PIÙ
 • Da 2 a 6 giocatori sullo stesso telefono, umani o CPU
+• Partite da 12, 20 o 30 giri, con fine turno automatico
 • CPU a tre livelli: Facile, Normale, Squalo
 • GP del weekend con diritti doppi e montepremi della Safety Car
 • Tutorial guidato, musica e effetti sonori
@@ -85,11 +83,9 @@ Race 3 or 5 events with points for finishing order and a double-points finale. D
 🔨 AUCTIONS, MORTGAGES AND BANKRUPTCY
 Nobody buys? It goes to auction. Can't pay? Mortgage and sell grandstands: you only lose when nothing is left.
 
-🏎️ TEAMS WITH PERKS
-Golden Sponsor, Engineers, Lawyers, Marketing, Aero: every team plays differently.
-
 🎲 PLUS
 • 2 to 6 players on one phone, humans or CPU
+• 12, 20 or 30-lap games with auto end turn
 • Three CPU levels: Easy, Normal, Shark
 • Weekend Grand Prix with double fees and a Safety Car jackpot
 • Guided tutorial, music and sound effects

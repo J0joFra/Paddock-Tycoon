@@ -195,11 +195,7 @@ button{font:inherit;color:inherit}
 .sum{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:14px}
 .sum dt{color:var(--muted);font-weight:700}
 .sum dd{margin:0;font-weight:700}
-.prow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:6px;align-items:center}
-.teamc{width:34px;height:34px;border-radius:9px;border:1.5px solid var(--line);background:var(--surface);font-size:17px;cursor:pointer}
-.teams{display:flex;flex-wrap:wrap;gap:4px}
-.teams span{font-size:11px;font-weight:600;background:var(--surface-2);border-radius:6px;padding:2px 6px;color:var(--muted)}
-.teams b{color:var(--ink)}
+.prow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:6px;align-items:center}
 .prow input{background:var(--surface-2);border:1.5px solid var(--line);border-radius:8px;padding:8px;color:var(--ink);font:inherit;font-weight:700;min-width:0;width:100%;-webkit-user-select:text;user-select:text}
 .swatch{width:28px;height:28px;border-radius:50%;background:var(--pc);border:3px solid var(--surface);box-shadow:0 0 0 1.5px var(--line);cursor:pointer}
 .seg{display:flex;background:var(--surface-2);border-radius:8px;padding:2px;gap:2px;flex-wrap:wrap}
@@ -329,6 +325,11 @@ body{overflow:hidden;box-sizing:border-box;padding-block:6px;padding-right:max(3
 .cell .ctxt{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
 .cell.side-b .ctrk,.cell.side-t .ctrk{height:52%}
 @media (max-aspect-ratio:1/1){.cell.c{flex-direction:column}.cell .ctrk{height:34%}}
+/* Fine turno automatico */
+.btn.auto{position:relative;overflow:hidden}
+.btn.auto::after{content:"";position:absolute;left:0;bottom:0;height:4px;width:100%;background:rgba(255,255,255,.85);transform-origin:left;animation:autoend 2.6s linear forwards}
+@keyframes autoend{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.hint{display:inline-block;margin-top:2px;font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px;background:#fff3c4;color:var(--ink)}
 /* Logo */
 .brandlogo{display:block;height:auto;font-style:normal;font-weight:400;filter:drop-shadow(0 6px 10px rgba(21,23,28,.18))}
 .center .brand .brandlogo{width:clamp(110px,31vmin,250px)}
@@ -477,16 +478,6 @@ const rentTable=sq=>[r5(sq.price*.07),r5(sq.price*.45),r5(sq.price*1.2),r5(sq.pr
 const LV_SHORT=T(['Base','1T','2T','3T','GP'],['Base','1G','2G','3G','GP']);
 const COLORS=['#e10a1e','#2563eb','#d97706','#9333ea','#15a34a','#0891b2'];
 const PCTS=[0,10,20,30,40,50,60,70,75];
-const TEAMS={
-  sponsor:{i:'💰',n:T("Sponsor d'oro",'Golden Sponsor'),d:T('+€50M in più a ogni passaggio dal via','+€50M extra every time you pass GO')},
-  eng:{i:'🔧',n:T('Ingegneri','Engineers'),d:T('Tribune e GP costano il 25% in meno','Grandstands and GPs cost 25% less')},
-  law:{i:'⚖️',n:T('Avvocati','Lawyers'),d:T('Tasse e multe dimezzate, bustarella riesce al 75%','Taxes and fines halved, bribes work 75% of the time')},
-  mkt:{i:'📣',n:'Marketing',d:T('Diritti incassati +15%','+15% on fees you collect')},
-  aero:{i:'🪽',n:T('Aerodinamica','Aero'),d:T('In zona DRS avanzi di 6 invece di 3','DRS zones move you 6 instead of 3')},
-};
-const TEAM_IDS=Object.keys(TEAMS);
-const rndTeam=()=>TEAM_IDS[Math.floor(Math.random()*TEAM_IDS.length)];
-const tm=p=>TEAMS[p&&p.team]||null;
 const DF={easy:{reserve:260,build:380,bid:.8,accept:1.0,trade:.4},normal:{reserve:150,build:250,bid:1,accept:1.1,trade:1},shark:{reserve:70,build:140,bid:1.2,accept:1.25,trade:1}};
 const df=()=>DF[(S&&S.diff)||'normal'];
 const PTS=[25,18,15,12,10,8];
@@ -668,7 +659,7 @@ function paintSound(){ $('#sndbtn').innerHTML=muted?ICON_OFF:ICON_ON; }
 
 // ================= Economia =================
 function gain(p,n){p.cash+=n;sfx('coin');log(`${p.name} +${fmt(n)}`);}
-function lvCost(i,l){const up=G[SQ[i].g].up,b=l===4?up*2:up,o=S.own[i];return o&&P(o.owner).team==='eng'?r5(b*.75):b;}
+function lvCost(i,l){const up=G[SQ[i].g].up,b=l===4?up*2:up,o=S.own[i];return b;}
 function upCost(i){return lvCost(i,S.own[i].level+1);}
 function levelValue(i,l){const up=G[SQ[i].g].up;return l<=3?l*up:5*up;}
 function propValue(i){const o=S.own[i];return (o.mort?SQ[i].price/2:SQ[i].price)+(SQ[i].t==='c'?levelValue(i,o.level):0);}
@@ -684,7 +675,6 @@ function rentOf(i){
   const t=rentTable(sq);
   let r=o.level===0?(ownsGroup(owner,sq.g)?t[0]*2:t[0]):t[o.level];
   if(S.weekend===i) r*=2;
-  if(owner.team==='mkt') r=r5(r*1.15);
   return r;
 }
 function pickWeekend(){
@@ -711,7 +701,6 @@ function autoRaise(p,need){
 }
 async function pay(p,amt,creditor,why,opt={}){
   if(p.out||amt<=0) return true;
-  if(!creditor&&!opt.full&&p.team==='law') amt=Math.max(5,r5(amt/2));
   if(p.cash<amt){
     sfx('alarm');
     if(p.cpu) autoRaise(p,amt); else await debtScreen(p,amt,creditor,why);
@@ -785,7 +774,7 @@ async function moveSteps(p,n){
   const dir=Math.sign(n);stepK=0;
   for(let k=0;k<Math.abs(n);k++){
     p.pos=(p.pos+dir+32)%32;
-    if(dir>0&&p.pos===0){const b=LAP_BONUS+(p.team==='sponsor'?50:0);p.cash+=b;sfx('coin');log(T(`${p.name} passa dal via +${fmt(b)}`,`${p.name} passes GO +${fmt(b)}`));}
+    if(dir>0&&p.pos===0){const b=LAP_BONUS;p.cash+=b;sfx('coin');log(T(`${p.name} passa dal via +${fmt(b)}`,`${p.name} passes GO +${fmt(b)}`));}
     else sfx('step');
     render(); await wait(130);
   }
@@ -818,7 +807,7 @@ async function resolve(p){
   switch(sq.t){
     case 'card':return drawCard(p);
     case 'tax':setMsg(`${sq.name} ${fmt(sq.amount)}`,'warn');await pay(p,sq.amount,null,sq.name);return;
-    case 'drs':{const n=p.team==='aero'?6:3;setMsg(T(`DRS aperto: +${n}`,`DRS open: +${n}`),'good');sfx('engine');render();await wait(500);await moveSteps(p,n);return resolve(p);}
+    case 'drs':{const n=3;setMsg(T(`DRS aperto: +${n}`,`DRS open: +${n}`),'good');sfx('engine');render();await wait(500);await moveSteps(p,n);return resolve(p);}
     case 'cops':return stopGo(p,T('Commissari di gara · Stop & Go','Race stewards · Stop & Go'));
     case 'pit':setMsg(T('Transito in Pit Lane','Driving through Pit Lane'));return;
     case 'sc':
@@ -927,7 +916,7 @@ function nextTurn(){
 }
 async function startTurn(){
   const p=cur();
-  S.doubles=0;S.lastDbl=false;S.phase='roll';S.pending=null;
+  S.doubles=0;S.lastDbl=false;S.phase='roll';S.pending=null;S.autoOff=false;
   setMsg(T(`Tocca a ${p.name}`,`${p.name}'s turn`));banner(p);keepAwake();
   if(p.loan&&S.round>p.loan.due){
     const owe=r5(p.loan.owe*1.2);p.loan=null;
@@ -941,7 +930,7 @@ async function startTurn(){
       <div class="row">
         ${p.flags>0?`<button class="btn primary" data-choice="flag">${T('Bandiera verde','Green flag')} ×${p.flags}</button>`:''}
         <button class="btn ${p.flags?'dark':'primary'}" data-choice="pay" ${p.cash>=STOPGO_FEE?'':'disabled'}>${T('Paga','Pay')} ${fmt(STOPGO_FEE)}</button>
-        <button class="btn dark" data-choice="bribe" ${p.cash>=BRIBE?'':'disabled'}>🕶️ ${T('Bustarella','Bribe')} ${fmt(BRIBE)} <small>${p.team==='law'?75:50}%</small></button>
+        <button class="btn dark" data-choice="bribe" ${p.cash>=BRIBE?'':'disabled'}>🕶️ ${T('Bustarella','Bribe')} ${fmt(BRIBE)} <small>50%</small></button>
         <button class="btn out" data-choice="skip">${T('Salto il turno','Skip my turn')}</button>
       </div>`);
     closeSheet();
@@ -950,7 +939,7 @@ async function startTurn(){
     else if(c==='pay'){p.cash-=STOPGO_FEE;S.pot=(S.pot||0)+STOPGO_FEE;sfx('pay');log(T(`${p.name} paga lo Stop & Go`,`${p.name} pays the Stop & Go`));S.phase='roll';}
     else if(c==='bribe'){
       p.cash-=BRIBE;S.pot=(S.pot||0)+BRIBE;sfx('pay');
-      if(Math.random()<(p.team==='law'?.75:.5)){setMsg(T('🕶️ Commissari corrotti: si riparte!','🕶️ Stewards bribed: back on track!'),'good');log(T(`${p.name} corrompe i commissari`,`${p.name} bribes the stewards`));S.phase='roll';sfx('deal');}
+      if(Math.random()<.5){setMsg(T('🕶️ Commissari corrotti: si riparte!','🕶️ Stewards bribed: back on track!'),'good');log(T(`${p.name} corrompe i commissari`,`${p.name} bribes the stewards`));S.phase='roll';sfx('deal');}
       else{setMsg(T('🕶️ Bustarella scoperta! Turno saltato','🕶️ Bribe exposed! Turn skipped'),'warn');log(T(`${p.name} scoperto a corrompere i commissari`,`${p.name} caught bribing the stewards`));S.phase='end';sfx('siren');}
     }
     else{setMsg(T(`${p.name} sconta lo Stop & Go`,`${p.name} serves the Stop & Go`),'warn');log(T(`${p.name} salta il turno`,`${p.name} skips a turn`));S.phase='end';}
@@ -1207,11 +1196,12 @@ function render(){
   if(!busy){$('#d1').innerHTML=dieHTML(S.dice[0]);$('#d2').innerHTML=dieHTML(S.dice[1]);}
   $('#pot').innerHTML=(S.champ?`<span>🏆 ${T('Gara','Race')} ${S.champ.idx+1}/${S.champ.n}</span>`:'')+(S.weekend!=null?`<span>🏁 GP ${SQ[S.weekend].code} ×2</span>`:'')+`<span class="${S.pot>=100?'full':''}">🚨 SC ${fmt(S.pot||0)}</span>`;
   $('#tower').innerHTML=S.players.map(q=>`<button class="chip ${q===p&&!S.over?'turn':''} ${q.out?'out':''}" data-act="pinfo" data-i="${q.id}">
-    ${tok(q)}<span class="nm">${tm(q)?`<span aria-label="${esc(tm(q).n)}">${tm(q).i}</span>`:''}${esc(q.name)}${q.cpu?'<span class="b">🤖</span>':''}${q.stopgo?'<span class="b red">S&amp;G</span>':''}${q.flags?'<span class="b gold">🏁'+q.flags+'</span>':''}${q.loan?'<span class="b red">🦈</span>':''}${S.champ?`<span class="b">${S.champ.pts[q.id]}pt</span>`:''}</span>
+    ${tok(q)}<span class="nm">${esc(q.name)}${q.cpu?'<span class="b">🤖</span>':''}${q.stopgo?'<span class="b red">S&amp;G</span>':''}${q.flags?'<span class="b gold">🏁'+q.flags+'</span>':''}${q.loan?'<span class="b red">🦈</span>':''}${S.champ?`<span class="b">${S.champ.pts[q.id]}pt</span>`:''}</span>
     <span class="cash">${q.out?'OUT':fmt(q.cash)}</span></button>`).join('');
   renderActions();
   $('#ticker').innerHTML=`${ICON_LOG}<span>${esc(S.log[0]||'')}</span>`;
   const tab=$('#tab');tab.hidden=false;tab.disabled=!canTrade();
+  scheduleAutoEnd();
   floats();
 }
 const IC={
@@ -1309,6 +1299,16 @@ function confetti(n=140){
     if(t-t0<2800)requestAnimationFrame(f);else{ctx.clearRect(0,0,W,H);cv.hidden=true;}
   })(t0);
 }
+let autoT=null;
+function scheduleAutoEnd(){
+  if(!S||S.over||!S.autoEnd||S.autoOff||autoT||busy||S.phase!=='end'||cur().cpu)return;
+  const g=GEN,turn=S.turn,round=S.round;
+  autoT=setTimeout(()=>{autoT=null;
+    if(g!==GEN||!S||S.autoOff||S.phase!=='end'||busy||cur().cpu||S.turn!==turn||S.round!==round)return;
+    if(!$('#backdrop').hidden||!$('#menu').hidden||document.querySelector('.coach')){scheduleAutoEnd();return;}
+    endTurn();},2600);
+}
+function cancelAutoEnd(){if(S)S.autoOff=true;if(autoT){clearTimeout(autoT);autoT=null;}}
 function renderActions(){
   const a=$('#actions'),p=cur();
   if(S.over){a.innerHTML=`<div class="row"><button class="btn primary" data-act="setup">${T('Nuova partita','New game')}</button><button class="btn dark" data-act="results">${T('Classifica','Results')}</button></div>`;return;}
@@ -1317,10 +1317,14 @@ function renderActions(){
   if(S.phase==='roll') main=`<div class="row"><button class="btn primary" data-act="roll" ${busy?'disabled':''}>🎲 ${busy?'…':(S.doubles>0?T('Rilancia','Roll again'):T('Lancia','Roll'))}</button></div>`;
   else if(S.phase==='buy'){
     const i=S.pending,sq=SQ[i];
-    main=`<div class="deal" style="--g:${gcol(i)}"><span class="sw"></span><span class="thumb">${sq.t==='c'?trackSVG(i,'mini'):''}</span><div><b>${esc(sq.name)}</b><small>${sq.t==='c'?T('Diritti ','Fee ')+fmt(rentTable(sq)[0])+' · '+G[sq.g].n:T('Dadi ×5 / ×12','Dice ×5 / ×12')}</small></div><span class="px">${fmt(sq.price)}</span></div>
+    let hint='';
+    if(sq.g){const idx=groupIdx(sq.g);
+      if(idx.every(j=>j===i||(S.own[j]&&S.own[j].owner===p.id)))hint=T('⭐ Completa il tuo gruppo','⭐ Completes your group');
+      else{const o=S.players.find(q=>q!==p&&!q.out&&idx.filter(j=>S.own[j]&&S.own[j].owner===q.id).length===idx.length-1);if(o)hint=T(`🛑 Blocchi ${o.name}`,`🛑 Blocks ${o.name}`);}}
+    main=`<div class="deal" style="--g:${gcol(i)}"><span class="sw"></span><span class="thumb">${sq.t==='c'?trackSVG(i,'mini'):''}</span><div><b>${esc(sq.name)}</b><small>${sq.t==='c'?T('Diritti ','Fee ')+fmt(rentTable(sq)[0])+' · '+G[sq.g].n:T('Dadi ×5 / ×12','Dice ×5 / ×12')}</small>${hint?`<br><span class="hint">${esc(hint)}</span>`:''}</div><span class="px">${fmt(sq.price)}</span></div>
       <div class="row"><button class="btn primary" data-act="buy" ${p.cash>=sq.price&&!busy?'':'disabled'}>${T('Compra','Buy')}</button><button class="btn out" data-act="auction" ${busy?'disabled':''}>🔨 ${T('Asta','Auction')}</button></div>`;
   }
-  else if(S.phase==='end') main=`<div class="row"><button class="btn primary" data-act="end" ${busy?'disabled':''}>${T('Fine turno','End turn')} ›</button></div>`;
+  else if(S.phase==='end') main=`<div class="row"><button class="btn primary ${S.autoEnd&&!S.autoOff&&!busy?'auto':''}" data-act="end" ${busy?'disabled':''}>${T('Fine turno','End turn')} ›</button></div>`;
   else main=`<div class="waitline">…</div>`;
   const can=!busy&&['roll','end','buy'].includes(S.phase);
   a.innerHTML=main+`<div class="row"><button class="btn sm" data-act="manage" ${can?'':'disabled'}>🏟️ ${T('Circuiti','Circuits')} · ${propsOf(p).length}</button><button class="btn sm" data-act="log">📋 ${T('Cronaca','Race log')}</button></div>`;
@@ -1335,7 +1339,8 @@ function showInfo(i){
     h=`<div class="band" style="--g:${g.c}"></div><h2>${esc(sq.name)}</h2>
       <div class="trkcard" style="--g:${g.c}">${trackSVG(i,'big')}<span class="trkkm"><b>${T(sq.km.toFixed(3).replace('.',','),sq.km.toFixed(3))}</b> km</span><span class="trkcc">${esc(sq.country)}</span></div>
       <div class="facts"><span class="fact">${g.n}</span><span class="fact">${T('Prezzo','Price')} <b>${fmt(sq.price)}</b></span><span class="fact">${T('Tribuna','Grandstand')} <b>${fmt(g.up)}</b></span><span class="fact">GP <b>${fmt(g.up*2)}</b></span></div>
-      <div class="rt">${cells.map(([l,v,k])=>`<div class="${k===cl?'cur':''}"><small>${l}</small><b>${v}</b></div>`).join('')}</div>`;
+      <div class="rt">${cells.map(([l,v,k])=>`<div class="${k===cl?'cur':''}"><small>${l}</small><b>${v}</b></div>`).join('')}</div>
+      <div class="facts"><span class="fact">${T('Gruppo','Group')}</span>${groupIdx(sq.g).map(j=>{const oj=S&&S.own[j];return `<span class="fact">${oj?tok(P(oj.owner)):'<span class="tk" style="--pc:#cbd2dc"></span>'} ${esc(SQ[j].code)}${oj?' · '+esc(P(oj.owner).name):' · '+T('libero','free')}</span>`;}).join('')}</div>`;
   } else if(sq.t==='u') h=`<h2>${esc(sq.name)}</h2><div class="facts"><span class="fact">${T('Prezzo','Price')} <b>${fmt(sq.price)}</b></span><span class="fact">${T('Dadi','Dice')} <b>×5</b></span><span class="fact">${T('Entrambi','Both')} <b>×12</b></span></div>`;
   else{
     const d=T({go:`+${fmt(LAP_BONUS)} a ogni passaggio`,card:'Pesca un messaggio del muretto',tax:`Paghi ${fmt(sq.amount||0)}`,drs:'Avanzi di 3',pit:'Qui si sconta lo Stop & Go',sc:'Sosta libera e montepremi',cops:'Stop & Go in Pit Lane'},{go:`+${fmt(LAP_BONUS)} every time you pass`,card:'Draw a message from the pit wall',tax:`Pay ${fmt(sq.amount||0)}`,drs:'Move forward 3',pit:'Stop & Go penalties are served here',sc:'Free parking and jackpot',cops:'Stop & Go in Pit Lane'})[sq.t];
@@ -1362,7 +1367,6 @@ function showPlayer(id){
   const deals=[...(S.roys||[]).filter(r=>r.holder===id).map(r=>`🕶️ ${r.pct}% ${T('su','on')} ${SQ[r.prop].code} ${T('fino al giro','until lap')} ${r.until}`),
     ...(S.pacts||[]).filter(x=>x.a===id||x.b===id).map(x=>`🤝 ${T('Patto con','Pact with')} ${esc(P(x.a===id?x.b:x.a).name)} ${T('fino al giro','until lap')} ${x.until}`)];
   openSheet(`<h2>${tok(q)} ${esc(q.name)}</h2>
-    ${tm(q)?`<div class="facts"><span class="fact">${tm(q).i} <b>${tm(q).n}</b> · ${tm(q).d}</span></div>`:''}
     <div class="facts"><span class="fact">${T('Cassa','Cash')} <b>${fmt(q.cash)}</b></span>${q.loan?`<span class="fact">🦈 ${T('Debito','Debt')} <b>${fmt(q.loan.owe)}</b> · ${T('giro','lap')} ${q.loan.due}</span>`:''}<span class="fact">${T('Patrimonio','Net worth')} <b>${fmt(netWorth(q))}</b></span><span class="fact">${T('Diritti/giro','Fees/lap')} ~<b>${fmt(rentPower(q))}</b></span></div>
     <div class="picks">${mine.map(i=>`<span class="pick ${S.own[i].mort?'mort':''}"><span class="sw" style="--g:${gcol(i)}"></span>${SQ[i].code}${S.own[i].level?' · '+LV_SHORT[S.own[i].level]:''}</span>`).join('')||`<span class="muted">${T('Nessun circuito','No circuits')}</span>`}</div>
     ${deals.length?`<div class="clauses"><h3>${T('Sotto banco','Under the table')}</h3>${deals.map(d=>`<div class="cl">${d}</div>`).join('')}</div>`:''}
@@ -1401,7 +1405,6 @@ function showRules(){
     ['🚦 Stop & Go',`Paga ${fmt(STOPGO_FEE)}, usa la Bandiera verde, salta, o tenta la bustarella (50%).`],
     ['🏁 GP del weekend','A ogni giro un circuito ospita il GP: diritti ×2.'],
     ['🚨 Montepremi SC','Tasse, multe e bustarelle finiscono nel montepremi: chi si ferma sulla Safety Car lo incassa.'],
-    ['🏎️ Scuderie','Ogni pilota ha un vantaggio: '+TEAM_IDS.map(k=>TEAMS[k].i+' '+TEAMS[k].n).join(', ')+'.'],
     ['🦈 Strozzino','Nella scheda Circuiti: fino a €300M subito, da restituire +30% entro 3 giri. In ritardo: +20% di mora.'],
     ['🏆 Campionato','3 o 5 gare a giri contati. Punti per l\'ordine d\'arrivo: 25-18-15-12-10-8. L\'ultima gara vale doppio.'],
     ['🏁 Fine','Ultimo in gara, oppure patrimonio più alto a fine giri.']],[['🏎️ Pole position','At the start everyone rolls the dice: the highest starts first.'],['🎲 Lap',`2 dice, +${fmt(LAP_BONUS)} when you pass GO. Double = roll again; 3 doubles = Stop & Go.`],
@@ -1415,7 +1418,6 @@ function showRules(){
     ['🚦 Stop & Go',`Pay ${fmt(STOPGO_FEE)}, use a Green flag, skip a turn, or try a bribe (50%).`],
     ['🏁 Weekend GP','Every lap one circuit hosts the GP: fees ×2.'],
     ['🚨 SC jackpot','Taxes, fines and bribes go into the jackpot: land on the Safety Car to collect it.'],
-    ['🏎️ Teams','Every driver has a perk: '+TEAM_IDS.map(k=>TEAMS[k].i+' '+TEAMS[k].n).join(', ')+'.'],
     ['🦈 Loan shark','In the Circuits panel: up to €300M now, pay back +30% within 3 laps. Late: +20% penalty.'],
     ['🏆 Championship','3 or 5 races with a lap limit. Points by finishing order: 25-18-15-12-10-8. The last race counts double.'],
     ['🏁 Finish','Last driver standing, or highest net worth when the laps run out.']]);
@@ -1477,13 +1479,12 @@ function showGameOver(){
 }
 
 // ================= Setup =================
-let setup={mode:'single',climit:12,fast:false,diff:'normal',players:[{name:T('Tu','You'),cpu:false,color:COLORS[0],team:rndTeam()},{name:'CPU Alfa',cpu:true,color:COLORS[1],team:rndTeam()},{name:'CPU Bravo',cpu:true,color:COLORS[2],team:rndTeam()}],limit:0};
+let setup={mode:'single',climit:12,fast:false,diff:'normal',autoEnd:true,players:[{name:T('Tu','You'),cpu:false,color:COLORS[0]},{name:'CPU Alfa',cpu:true,color:COLORS[1]},{name:'CPU Bravo',cpu:true,color:COLORS[2]}],limit:20};
 function syncNames(){setup.players.forEach((p,i)=>{const v=$('#pname-'+i);if(v)p.name=v.value;});const l=$('#limit');if(l)setup.limit=+l.dataset.v;}
 function showSetup(){
   const rows=setup.players.map((p,i)=>`<div class="prow">
     <button class="swatch" style="--pc:${p.color}" data-act="col" data-i="${i}" aria-label="${T('Colore','Colour')}"></button>
     <input type="text" id="pname-${i}" value="${esc(p.name)}" maxlength="12" aria-label="${T('Nome','Name')}">
-    <button class="teamc" data-act="team" data-i="${i}" aria-label="${T('Scuderia','Team')}: ${esc(TEAMS[p.team].n)}">${TEAMS[p.team].i}</button>
     <div class="seg"><button class="${p.cpu?'':'on'}" data-act="human" data-i="${i}">👤</button><button class="${p.cpu?'on':''}" data-act="cpu" data-i="${i}">🤖</button></div>
     <button class="btn xs" data-act="rm" data-i="${i}" ${setup.players.length<=2?'disabled':''} aria-label="${T('Rimuovi','Remove')}">✕</button></div>`).join('');
   openSheet(`<h2>${T('Griglia di partenza','Starting grid')}</h2>
@@ -1491,11 +1492,11 @@ function showSetup(){
     <div class="tiles" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${rows}</div>
     <div class="row"><button class="btn sm" data-act="add" ${setup.players.length>=6?'disabled':''}>+ ${T('Pilota','Driver')}</button>
       <div class="seg">${[[false,T('Ritmo normale','Normal pace')],[true,T('Veloce','Fast')]].map(([v,l])=>`<button class="${setup.fast===v?'on':''}" data-act="pace" data-v="${v}">${l}</button>`).join('')}</div>
+      <div class="seg">${[[true,T('Fine turno auto','Auto end turn')],[false,T('Manuale','Manual')]].map(([v,l])=>`<button class="${setup.autoEnd===v?'on':''}" data-act="autoend" data-v="${v}">${l}</button>`).join('')}</div>
       <div class="seg">${DIFFS.map(([v,l])=>`<button class="${setup.diff===v?'on':''}" data-act="diff" data-v="${v}">${l}</button>`).join('')}</div>
       ${setup.mode==='single'
-        ?`<div class="seg" id="limit" data-v="${setup.limit}">${[[0,T('∞ Ultimo in gara','∞ Last one standing')],[15,T('15 giri','15 laps')],[25,T('25 giri','25 laps')]].map(([v,l])=>`<button class="${setup.limit==v?'on':''}" data-act="lim" data-v="${v}">${l}</button>`).join('')}</div>`
+        ?`<div class="seg" id="limit" data-v="${setup.limit}">${[[12,T('12 giri','12 laps')],[20,T('20 giri','20 laps')],[30,T('30 giri','30 laps')],[0,T('∞ Ultimo in gara','∞ Last one standing')]].map(([v,l])=>`<button class="${setup.limit==v?'on':''}" data-act="lim" data-v="${v}">${l}</button>`).join('')}</div>`
         :`<div class="seg">${[8,12,15].map(v=>`<button class="${setup.climit==v?'on':''}" data-act="climit" data-v="${v}">${v} ${T('giri a gara','laps per race')}</button>`).join('')}</div>`}</div>
-    <div class="teams">${TEAM_IDS.map(k=>`<span>${TEAMS[k].i} <b>${TEAMS[k].n}</b> ${TEAMS[k].d}</span>`).join('')}</div>
     <div class="row"><button class="btn primary" data-act="start">🚦 ${T('Via!','Go!')}</button>${S&&!S.over?`<button class="btn out" data-act="close">${T('Riprendi','Resume')}</button>`:'<button class="btn out" data-act="menu">‹ Menu</button>'}</div>`,!!S);
 }
 async function chooseOrder(){
@@ -1536,10 +1537,10 @@ async function startGame(champ=null){
     const names=shuffle(RACES.filter(r=>r!==FINALE)).slice(0,n-1).concat(FINALE);
     champ={n,idx:0,names,pts:setup.players.map(()=>0),wins:setup.players.map(()=>0),limit:setup.climit||12,results:[]};
   }
-  S={players:setup.players.map((p,i)=>({id:i,name:p.name,color:p.color,cpu:p.cpu,team:p.team||rndTeam(),cash:START_CASH,pos:0,out:false,stopgo:false,flags:0,loan:null})),
+  S={players:setup.players.map((p,i)=>({id:i,name:p.name,color:p.color,cpu:p.cpu,cash:START_CASH,pos:0,out:false,stopgo:false,flags:0,loan:null})),
     own:{},roys:[],pacts:[],turn:0,phase:'roll',doubles:0,lastDbl:false,dice:[5,2],round:1,limit:setup.limit,
     deck:shuffle([...CARDS.keys()]),deckPos:0,log:[],msg:null,over:false,pending:null,asked:{},
-    pot:0,weekend:null,stats:{},first:0,fast:setup.fast,diff:setup.diff,hist:[],champ};
+    pot:0,weekend:null,stats:{},first:0,fast:setup.fast,diff:setup.diff,autoEnd:setup.autoEnd,hist:[],champ};
   if(champ) S.limit=champ.limit;
   S.phase='order';
   $('#cars').innerHTML='';for(const k in carRot)delete carRot[k];for(const k in prevCash)delete prevCash[k];
@@ -1600,8 +1601,8 @@ function resumeSaved(){
   hideMenu();musicStop();GEN++;
   S=saved;busy=false;cpuActive=false;S.roys=S.roys||[];S.pacts=S.pacts||[];S.pot=S.pot||0;S.stats=S.stats||{};S.first=S.first||0;S.hist=S.hist||[];
   if(S.champ){setup.mode=S.champ.n===5?'c5':'c3';setup.climit=S.champ.limit;}else setup.mode='single';
-  setup.fast=!!S.fast;setup.diff=S.diff||'normal';setup.limit=S.limit||0;
-  setup.players=S.players.map(p=>({name:p.name,cpu:p.cpu,color:p.color,team:p.team||rndTeam()}));
+  setup.fast=!!S.fast;setup.diff=S.diff||'normal';setup.limit=S.limit||0;setup.autoEnd=S.autoEnd!==false;
+  setup.players=S.players.map(p=>({name:p.name,cpu:p.cpu,color:p.color}));
   if(S.phase==='auction') S.phase='buy';
   if(S.phase==='buy'&&S.pending==null) S.phase='end';
   if(S.phase==='order'){S.phase='roll';}
@@ -1618,7 +1619,7 @@ const TUT_IT=[
   ['.dice','🎲 I dadi','Tocca Lancia per muoverti. Con un doppio rilanci, ma al terzo doppio di fila prendi uno Stop & Go.'],
   ['#c22','🏟️ I circuiti','Tocca un circuito per vedere prezzo e diritti. Se ti fermi su uno libero puoi comprarlo o mandarlo all\'asta.'],
   ['#c1','🎨 Gruppi colore','Possiedi tutti i circuiti dello stesso colore? I diritti raddoppiano e puoi costruire tribune e poi il Gran Premio.'],
-  ['#tower','🏎️ I piloti','Soldi in cassa e scuderia di ogni pilota. Toccane uno per vedere i suoi circuiti e proporgli un affare.'],
+  ['#tower','🏎️ I piloti','Soldi in cassa di ogni pilota. Toccane uno per vedere i suoi circuiti e proporgli un affare.'],
   ['#actions','🕹️ La plancia','Qui lanci, compri, mandi all\'asta e chiudi il turno. Da “Circuiti” gestisci tribune, ipoteche e lo strozzino.'],
   ['#pot','🚨 Eventi del giro','Ogni giro un GP del weekend paga diritti doppi. Tasse e multe riempiono il montepremi: chi si ferma sulla Safety Car lo incassa.'],
   ['#tab','🤝 Affari','Apri la tendina per trattare con gli avversari: soldi, circuiti, controfferte e accordi sotto banco.'],
@@ -1629,7 +1630,7 @@ const TUT=T(TUT_IT,[
   ['.dice','🎲 The dice','Tap Roll to move. Roll a double and you go again, but three doubles in a row earn a Stop & Go.'],
   ['#c22','🏟️ Circuits','Tap a circuit to see its price and fees. Land on a free one and you can buy it or send it to auction.'],
   ['#c1','🎨 Colour groups','Own every circuit of one colour? Fees double and you can build grandstands, then the Grand Prix.'],
-  ['#tower','🏎️ Drivers','Each driver\'s cash and team. Tap one to see their circuits and propose a deal.'],
+  ['#tower','🏎️ Drivers','Each driver\'s cash. Tap one to see their circuits and propose a deal.'],
   ['#actions','🕹️ Controls','Roll, buy, auction and end your turn here. Under “Circuits” you manage grandstands, mortgages and the loan shark.'],
   ['#pot','🚨 Lap events','Each lap a Weekend GP pays double fees. Taxes and fines fill the jackpot: land on the Safety Car to collect it.'],
   ['#tab','🤝 Deals','Open the drawer to trade with rivals: cash, circuits, counteroffers and under-the-table deals.'],
@@ -1688,7 +1689,6 @@ const ACT={
   trade:()=>startTrade(),
   loan:b=>{const p=cur();if(p.loan||p.cpu)return;const n=+b.dataset.v;p.cash+=n;p.loan={owe:Math.round(n*1.3),due:S.round+3};sfx('coin');log(T(`🦈 ${p.name} prende ${fmt(n)} dallo strozzino`,`🦈 ${p.name} borrows ${fmt(n)} from the loan shark`));save();render();showManage();},
   repay:()=>{const p=cur();if(!p.loan||p.cash<p.loan.owe)return;p.cash-=p.loan.owe;log(T(`${p.name} salda lo strozzino (${fmt(p.loan.owe)})`,`${p.name} pays off the loan shark (${fmt(p.loan.owe)})`));p.loan=null;sfx('pay');save();render();showManage();},
-  team:b=>{syncNames();const p=setup.players[+b.dataset.i];p.team=TEAM_IDS[(TEAM_IDS.indexOf(p.team)+1)%TEAM_IDS.length];showSetup();},
   diff:b=>{syncNames();setup.diff=b.dataset.v;showSetup();},
   mode:b=>{syncNames();setup.mode=b.dataset.v;showSetup();},
   climit:b=>{syncNames();setup.climit=+b.dataset.v;showSetup();},
@@ -1703,16 +1703,17 @@ const ACT={
     if(!(o.give.length||o.get.length||o.cashGive||o.cashGet||o.pact)) return paintEditor(T('Scegli almeno qualcosa.','Pick at least one thing.'));
     const r=trResolve;trResolve=null;closeSheet();r({...o});},
   'tr-cancel':()=>{const r=trResolve;trResolve=null;closeSheet();r(null);},
-  add:()=>{syncNames();const used=setup.players.map(p=>p.color);setup.players.push({name:'CPU '+['Alfa','Bravo','Charlie','Delta','Echo','Fox'][setup.players.length],cpu:true,color:COLORS.find(c=>!used.includes(c)),team:rndTeam()});showSetup();},
+  add:()=>{syncNames();const used=setup.players.map(p=>p.color);setup.players.push({name:'CPU '+['Alfa','Bravo','Charlie','Delta','Echo','Fox'][setup.players.length],cpu:true,color:COLORS.find(c=>!used.includes(c))});showSetup();},
   rm:b=>{syncNames();setup.players.splice(+b.dataset.i,1);showSetup();},
   human:b=>{syncNames();setup.players[+b.dataset.i].cpu=false;showSetup();},
   cpu:b=>{syncNames();setup.players[+b.dataset.i].cpu=true;showSetup();},
   lim:b=>{syncNames();setup.limit=+b.dataset.v;showSetup();},
   pace:b=>{syncNames();setup.fast=b.dataset.v==='true';showSetup();},
+  autoend:b=>{syncNames();setup.autoEnd=b.dataset.v==='true';showSetup();},
   col:b=>{syncNames();const p=setup.players[+b.dataset.i],used=setup.players.map(x=>x.color);let k=COLORS.indexOf(p.color);for(let n=0;n<6;n++){k=(k+1)%6;if(!used.includes(COLORS[k]))break;}p.color=COLORS[k];showSetup();},
 };
 function after(b){save();render();if(b.dataset.ctx==='info')showInfo(+b.dataset.i);else showManage();}
-const NO_GAME_OK=['lang','music','pause','home','menu','tomenu','abandon','doabandon','resume','newsingle','newchamp','learn','fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info','team','diff','mode','climit','tutorial'];
+const NO_GAME_OK=['lang','music','pause','home','menu','tomenu','abandon','doabandon','resume','newsingle','newchamp','learn','fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info','diff','autoend','mode','climit','tutorial'];
 document.addEventListener('pointerdown',()=>{MUSIC.unlockedAt=performance.now();ac();setTimeout(musicStart,30);},{once:true});
 document.addEventListener('click',e=>{
   const c=e.target.closest('[data-choice]');
@@ -1720,6 +1721,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
   const f=ACT[b.dataset.act];if(!f)return;
   if(!S&&!NO_GAME_OK.includes(b.dataset.act))return;
+  if(S&&S.phase==='end'&&!['end','close','sound','music','fullscreen'].includes(b.dataset.act))cancelAutoEnd();
   f(b);
 });
 document.addEventListener('keydown',e=>{
@@ -1737,22 +1739,6 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 // ================= Avvio =================
 function boot(){
   applyStatic();paintSound();buildBoard();render();showMenu();
-}
-function bootOld(){
-  const saved=loadSaved();
-  if(saved&&saved.players&&!saved.over){
-    S=saved;busy=false;S.roys=S.roys||[];S.pacts=S.pacts||[];S.pot=S.pot||0;S.stats=S.stats||{};S.first=S.first||0;
-    if(S.phase==='order'){S.phase='roll';}
-    if(S.champ){setup.mode=S.champ.n===5?'c5':'c3';setup.climit=S.champ.limit;}
-    setup.fast=!!S.fast;setup.diff=S.diff||'normal';S.hist=S.hist||[];
-    setup.players.forEach((q,k)=>q.team=S.players[k].team||rndTeam());
-    setup.players=S.players.map(p=>({name:p.name,cpu:p.cpu,color:p.color}));setup.limit=S.limit||0;
-    if(S.phase==='auction'){S.phase='buy';}
-    if(S.phase==='buy'&&S.pending==null) S.phase='end';
-    render();
-    if(S.phase==='stopgo'){cur().stopgo=true;startTurn();}
-    else if(cur().cpu) cpuTurn();
-  } else {render();showSetup();}
 }
 boot();
 // Funzionamento offline: solo nella versione pubblicata come app (con manifest), non nell'anteprima.
