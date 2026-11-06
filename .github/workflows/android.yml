@@ -1,0 +1,78 @@
+name: App Android
+
+# Compila l'app Android (Capacitor) e pubblica i pacchetti come artifact dell'esecuzione.
+# - push su main che tocca il gioco o il progetto Android: build di controllo
+# - tag v1.2.3 o avvio manuale: build di rilascio (firmata se ci sono i secrets)
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths: ['src/**', 'android/**', 'fonts/**', 'tools/build.py', 'package.json', 'package-lock.json', 'capacitor.config.json', '.github/workflows/android.yml']
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Versione mostrata nello store (es. 1.0.0). Vuoto = 1.0.<numero esecuzione>'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Dipendenze
+        run: npm ci
+
+      - name: Gioco per l'app (www/) e sincronizzazione Capacitor
+        run: |
+          python3 tools/build.py --native
+          npx cap sync android
+
+      - name: Versione
+        run: |
+          echo "PT_VERSION_CODE=$((100 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+          if [ -n "${{ github.event.inputs.version_name }}" ]; then V="${{ github.event.inputs.version_name }}";
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then V="${GITHUB_REF#refs/tags/v}";
+          else V="1.0.${GITHUB_RUN_NUMBER}"; fi
+          echo "PT_VERSION_NAME=$V" >> "$GITHUB_ENV"
+
+      - name: Chiave di firma
+        if: env.KEYSTORE_B64 != ''
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+          echo "PT_KEYSTORE=$RUNNER_TEMP/upload.keystore" >> "$GITHUB_ENV"
+          echo "PT_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "PT_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}" >> "$GITHUB_ENV"
+          echo "PT_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+
+      - name: Compilazione
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          if [ -n "$PT_KEYSTORE" ]; then ./gradlew --no-daemon bundleRelease assembleRelease;
+          else ./gradlew --no-daemon assembleDebug bundleRelease; fi
+
+      - name: Pacchetti
+        uses: actions/upload-artifact@v4
+        with:
+          name: paddock-tycoon-${{ env.PT_VERSION_NAME }}
+          path: |
+            android/app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error

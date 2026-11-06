@@ -1,0 +1,11 @@
+{
+  "appId": "io.github.j0jofra.paddocktycoon",
+  "appName": "Paddock Tycoon",
+  "webDir": "www",
+  "backgroundColor": "#f3f5f8",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}

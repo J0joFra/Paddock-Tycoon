@@ -60,6 +60,8 @@ e bloccato in orizzontale grazie a `manifest.webmanifest`. In verticale il gioco
 
 ## Sviluppo
 
+- App Android: `npm ci`, `python3 tools/build.py --native`, `npx cap sync android`, poi `android/` si apre con Android Studio (oppure lascia fare a GitHub Actions).
+
 - Il gioco è un unico file: **`src/game.html`** (stili, markup e script).
 - `python3 tools/build.py` genera `index.html` aggiungendo l'intestazione della web app (`tools/head.html`).
 - Dopo ogni modifica: build, poi aumenta la versione di `CACHE` in `sw.js` così i telefoni scaricano l'aggiornamento.
@@ -71,6 +73,7 @@ e bloccato in orizzontale grazie a `manifest.webmanifest`. In verticale il gioco
 - Web app installabile (manifest, icone, funzionamento offline): https://j0jofra.github.io/paddock-tycoon/
 - Privacy policy: [privacy.html](privacy.html)
 - Guida per Google Play: [docs/PUBBLICAZIONE-ANDROID.md](docs/PUBBLICAZIONE-ANDROID.md)
+- App Android nativa (Capacitor) e Google Play Games: [docs/PLAY-GAMES.md](docs/PLAY-GAMES.md) — compilata da GitHub Actions (`.github/workflows/android.yml`)
 - Testi e grafiche per lo store: [store/](store/)
 
 ## Crediti

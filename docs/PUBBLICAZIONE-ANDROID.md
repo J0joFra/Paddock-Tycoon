@@ -1,5 +1,9 @@
 # Pubblicare Paddock Tycoon su Google Play
 
+> **Novità:** l'app Android ora è nativa (Capacitor) con Google Play Games, compilata da GitHub Actions.
+> Segui [PLAY-GAMES.md](PLAY-GAMES.md) per la chiave, la compilazione e Play Games. Le sezioni 2 e 4 qui sotto
+> (PWABuilder e assetlinks) servono solo per la vecchia versione TWA; il resto (Play Console, test chiuso) vale ancora.
+
 Il gioco è una web app installabile ospitata su GitHub Pages. Per Google Play la si impacchetta come
 **Trusted Web Activity (TWA)** con [PWABuilder](https://www.pwabuilder.com): l'app Android apre il sito a schermo intero.
 Vantaggio: ogni aggiornamento pubblicato su GitHub arriva subito nell'app, senza ricaricare il pacchetto sullo store

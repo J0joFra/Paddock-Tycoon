@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Paddock Tycoon</string>
+    <string name="title_activity_main">Paddock Tycoon</string>
+    <string name="package_name">io.github.j0jofra.paddocktycoon</string>
+    <string name="custom_url_scheme">io.github.j0jofra.paddocktycoon</string>
+    <!-- Sostituire con l'ID numerico del progetto Play Games Services -->
+    <string name="game_services_project_id" translatable="false">000000000000</string>
+</resources>
