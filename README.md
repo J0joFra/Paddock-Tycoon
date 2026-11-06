@@ -5,6 +5,8 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 
 ## Come si gioca
 
+- **Online** (Firebase): stanza con codice o link per gli amici, oppure partita casuale; se qualcuno si disconnette guida la CPU. Da attivare seguendo [docs/ONLINE-FIREBASE.md](docs/ONLINE-FIREBASE.md).
+
 - **Durata**: 12, 20 (predefinita) o 30 giri, oppure fino all'ultimo in gara. **Fine turno automatico** attivabile nella griglia di partenza.
 - Quando compri, il gioco ti segnala se completi un gruppo o se blocchi un avversario; la scheda di un circuito mostra i proprietari del suo gruppo.
 
@@ -62,6 +64,7 @@ e bloccato in orizzontale grazie a `manifest.webmanifest`. In verticale il gioco
 - `python3 tools/build.py` genera `index.html` aggiungendo l'intestazione della web app (`tools/head.html`).
 - Dopo ogni modifica: build, poi aumenta la versione di `CACHE` in `sw.js` così i telefoni scaricano l'aggiornamento.
 - `tools/mktracks.py` rigenera i tracciati dal dataset open source.
+- Online: configurazione in `FIREBASE_CONFIG` dentro `src/game.html`, regole in `database.rules.json`. Per provare senza Firebase, in console del browser: `localStorage.setItem('paddock-tycoon-localnet','1')` e apri due schede dello stesso sito.
 
 ## Pubblicazione
 

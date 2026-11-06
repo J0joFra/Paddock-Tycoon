@@ -330,6 +330,20 @@ body{overflow:hidden;box-sizing:border-box;padding-block:6px;padding-right:max(3
 .btn.auto::after{content:"";position:absolute;left:0;bottom:0;height:4px;width:100%;background:rgba(255,255,255,.85);transform-origin:left;animation:autoend 2.6s linear forwards}
 @keyframes autoend{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 .hint{display:inline-block;margin-top:2px;font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px;background:#fff3c4;color:var(--ink)}
+/* Online */
+.sheet.ro button,.sheet.ro select,.sheet.ro input{pointer-events:none}
+.sheet.ro .row .btn{opacity:.55}
+.fld{display:grid;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}
+.fld input,.joinrow input{background:var(--surface-2);border:1.5px solid var(--line);border-radius:10px;padding:10px;color:var(--ink);font:inherit;font-weight:700;min-width:0;width:100%;box-sizing:border-box;-webkit-user-select:text;user-select:text}
+.joinrow{display:flex;gap:8px;align-items:stretch}
+.joinrow input{flex:1}
+#ocode{text-transform:uppercase;letter-spacing:.25em;font-weight:900;text-align:center}
+.seats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.seat{display:flex;align-items:center;gap:6px;background:var(--surface-2);border-radius:10px;padding:8px 10px;min-width:0}
+.seat b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.code{font-style:normal;letter-spacing:.15em;background:var(--ink);color:var(--surface);border-radius:8px;padding:0 8px}
+.netpill{position:fixed;top:calc(4px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:16;background:var(--ink);color:var(--surface);font-size:11px;font-weight:700;letter-spacing:.06em;padding:2px 10px;border-radius:20px;pointer-events:none}
+.netpill.warn{background:var(--red)}
 /* Logo */
 .brandlogo{display:block;height:auto;font-style:normal;font-weight:400;filter:drop-shadow(0 6px 10px rgba(21,23,28,.18))}
 .center .brand .brandlogo{width:clamp(110px,31vmin,250px)}
@@ -390,6 +404,7 @@ body{overflow:hidden;box-sizing:border-box;padding-block:6px;padding-right:max(3
   <button class="btn primary" data-act="fullscreen">Gioca in orizzontale</button>
 </div>
 
+<div class="netpill" id="netpill" hidden></div>
 <div class="fx" id="fx"></div>
 <canvas id="confetti" hidden></canvas>
 
@@ -403,6 +418,9 @@ const LANG_KEY='paddock-tycoon-lang';
 const LANG=(()=>{try{const v=localStorage.getItem(LANG_KEY);if(v==='it'||v==='en')return v;}catch(e){}return (navigator.language||'it').toLowerCase().startsWith('it')?'it':'en';})();
 const T=(it,en)=>LANG==='en'?en:it;
 document.documentElement.lang=LANG;
+const NET={on:false,host:false,code:null,uid:null,db:null,offs:[],pending:{},seq:0,lobby:{},cpus:0};
+const isMine=p=>!!p&&!p.cpu&&(!NET.on||p.uid===NET.uid);
+const isGuest=()=>NET.on&&!NET.host;
 function applyStatic(){
   if(LANG!=='en')return;
   const set=(sel,attr,val)=>{const e=document.querySelector(sel);if(e){if(attr)e.setAttribute(attr,val);else e.textContent=val;}};
@@ -537,7 +555,7 @@ const groupHasMort=g=>groupIdx(g).some(i=>S.own[i]&&S.own[i].mort);
 const tok=(p,cls='')=>`<span class="tk ${cls}" style="--pc:${p.color}"></span>`;
 const gcol=i=>SQ[i].g?G[SQ[i].g].c:'#9ca3af';
 
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function save(){if(!S||isGuest())return;try{if(NET.on)localStorage.setItem(KEY_ON,JSON.stringify({...S,net:{code:NET.code,pub:NET.pub}}));else localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 function loadSaved(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
 function log(t){S.log.unshift(t);S.log.length=Math.min(S.log.length,80);}
 function setMsg(text,kind='info'){S.msg={text,kind};}
@@ -647,7 +665,8 @@ function musicStop(fade=.7){
   setTimeout(()=>{try{g.disconnect();}catch(e){}},fade*1000+300);paintMusic();
 }
 function paintMusic(){const b=$('#musicbtn');if(b){b.textContent=(MUSIC.on&&!muted?'🎵 ':'🔇 ')+T('Musica','Music');b.setAttribute('aria-pressed',MUSIC.on&&!muted?'true':'false');}}
-function sfx(n){
+function sfx(n,remote){
+  if(!remote&&n!=='step'&&NET.on&&NET.host)hostFx({n});
   if(muted) return;
   if(SFX[n]) try{SFX[n]();}catch(e){}
   if(VIB[n]&&navigator.vibrate) try{navigator.vibrate(VIB[n]);}catch(e){}
@@ -740,11 +759,19 @@ function endGame(){
 
 // ================= Fogli (modali) =================
 let sheetDismiss=true, choice=null;
-function openSheet(html,dismiss=true){$('#sheet').innerHTML=html;$('#backdrop').hidden=false;sheetDismiss=dismiss;}
-function closeSheet(){$('#backdrop').hidden=true;$('#sheet').innerHTML='';}
-function ask(html){return new Promise(res=>{choice=res;openSheet(html,false);});}
+function openSheet(html,dismiss=true,priv=false){$('#sheet').innerHTML=html;$('#sheet').classList.remove('ro');$('#backdrop').hidden=false;sheetDismiss=dismiss;
+  if(NET.on){if(NET.host){NET.overlay=(!dismiss&&!priv&&NET.started)?html:null;pushState();}else{NET.localSheet=dismiss;NET.roShown=false;NET.panel=null;}}}
+function closeSheet(){$('#backdrop').hidden=true;$('#sheet').innerHTML='';$('#sheet').classList.remove('ro');
+  if(NET.on){if(NET.host){NET.overlay=null;pushState();}NET.localSheet=false;NET.roShown=false;NET.panel=null;}}
+function ask(html,p,def,priv){
+  if(NET.on&&NET.host&&p&&!p.cpu&&p.uid&&p.uid!==NET.uid)return remoteAsk(p.uid,{kind:'ask',html},def);
+  return new Promise(res=>{choice=res;openSheet(html,false,priv);});}
+const askFor=(p,def,priv)=>html=>ask(html,p,def,priv);
+function editFor(p,o,locked,title){
+  if(NET.on&&NET.host&&p&&!p.cpu&&p.uid&&p.uid!==NET.uid)return remoteAsk(p.uid,{kind:'edit',o,locked,title},null);
+  return editOffer(o,locked,title);}
 $('#backdrop').addEventListener('click',e=>{if(e.target.id==='backdrop'&&sheetDismiss)closeSheet();});
-const handoff=p=>S.players.filter(x=>!x.cpu&&!x.out).length>1?`<div class="handoff">📱 ${T('Passa il telefono a','Pass the phone to')} ${tok(p)} ${esc(p.name)}</div>`:'';
+const handoff=p=>NET.on?'':S.players.filter(x=>!x.cpu&&!x.out).length>1?`<div class="handoff">📱 ${T('Passa il telefono a','Pass the phone to')} ${tok(p)} ${esc(p.name)}</div>`:'';
 
 async function debtScreen(p,amt,creditor,why){
   while(p.cash<amt){
@@ -757,10 +784,11 @@ async function debtScreen(p,amt,creditor,why){
       return `<div class="tile ${o.mort?'mort':''}" style="--g:${gcol(i)}"><div class="h"><b>${esc(SQ[i].name)}</b><span>${o.mort?T('IPO','MTG'):LV_SHORT[o.level]}</span></div><div class="a">${a}</div></div>`;
     }).join('');
     const any=hasAssets(p);
-    const c=await ask(`${handoff(p)}<h2>${any?T('Servono fondi','You need cash'):T('Bancarotta','Bankruptcy')}</h2>
+    const c=await askFor(p,'__auto')(`${handoff(p)}<h2>${any?T('Servono fondi','You need cash'):T('Bancarotta','Bankruptcy')}</h2>
       <div class="debt"><span>${esc(why)}${creditor?' → '+esc(creditor.name):''}<br><small class="muted">${T('In cassa','Cash')} ${fmt(p.cash)}</small></span><b>${fmt(amt)}</b></div>
       ${any?`<div class="tiles">${tiles}</div>`:`<p>${T('Niente più da ipotecare o smontare.','Nothing left to mortgage or dismantle.')}</p>`}
       <div class="row"><button class="btn ${any?'out':'primary'}" data-choice="bk" ${any?'disabled':''}>${T('Dichiara bancarotta','Declare bankruptcy')}</button></div>`);
+    if(c==='__auto'){autoRaise(p,amt);break;}
     if(c==='bk') break;
     const [k,i]=c.split(':');
     if(k==='down') sellUpgrade(+i); else if(k==='mort') mortgage(+i);
@@ -857,7 +885,7 @@ async function auction(i){
       if(max[pid]===undefined) max[pid]=cpuMaxBid(p,i);
       const room=max[pid]-bid;
       c= room>=10 ? (room>150&&Math.random()<.4?'50':'10') : 'pass';
-    } else c=await ask(view(p,true));
+    } else {if(NET.on&&!isMine(p))openSheet(view(p,false),false);c=await ask(view(p,true),p,'pass');}
     if(c==='pass'){ids.splice(k%ids.length,1);log(T(`${p.name} passa`,`${p.name} passes`));sfx('no');}
     else{bid+=+c;leader=pid;k++;sfx('bid');}
   }
@@ -926,7 +954,7 @@ async function startTurn(){
   }
   if(p.stopgo){
     S.phase='stopgo';save();render();
-    const c=p.cpu?cpuStopGo(p):await ask(`${handoff(p)}<h2>🚦 Stop &amp; Go</h2><p>${esc(p.name)} ${T('è fermo in Pit Lane.','is stuck in Pit Lane.')}</p>
+    const c=p.cpu?cpuStopGo(p):await askFor(p,'skip')(`${handoff(p)}<h2>🚦 Stop &amp; Go</h2><p>${esc(p.name)} ${T('è fermo in Pit Lane.','is stuck in Pit Lane.')}</p>
       <div class="row">
         ${p.flags>0?`<button class="btn primary" data-choice="flag">${T('Bandiera verde','Green flag')} ×${p.flags}</button>`:''}
         <button class="btn ${p.flags?'dark':'primary'}" data-choice="pay" ${p.cash>=STOPGO_FEE?'':'disabled'}>${T('Paga','Pay')} ${fmt(STOPGO_FEE)}</button>
@@ -1088,7 +1116,7 @@ function paintEditor(err=''){
       <div class="cl">${T('Patto di non belligeranza','Non-aggression pact')} ${sel('pc',[0,1,2,3],o.pact,v=>v?v+T(' giri',' laps'):T('no','none'))}</div>
     </div>
     ${err?`<p style="color:var(--red);font-weight:700">${err}</p>`:''}
-    <div class="row"><button class="btn primary" data-act="tr-send">${T('Invia','Send')}</button><button class="btn out" data-act="tr-cancel">${TR.locked?T('Rifiuta','Decline'):T('Annulla','Cancel')}</button></div>`,false);
+    <div class="row"><button class="btn primary" data-act="tr-send">${T('Invia','Send')}</button><button class="btn out" data-act="tr-cancel">${TR.locked?T('Rifiuta','Decline'):T('Annulla','Cancel')}</button></div>`,false,true);
 }
 function readSelects(){
   const o=TR.o,v=id=>{const e=$('#'+id);return e?+e.value:0;};
@@ -1108,31 +1136,33 @@ async function negotiate(o){
         }
       }
     } else {
-      const c=await ask(`${handoff(R)}<h2>📨 ${T('Offerta da','Offer from')} ${tok(A)} ${esc(A.name)}</h2>${o.line?`<p><b>“${esc(o.line)}”</b></p>`:''}${offerSummary(o,R.id)}
+      const c=await askFor(R,'no',true)(`${handoff(R)}<h2>📨 ${T('Offerta da','Offer from')} ${tok(A)} ${esc(A.name)}</h2>${o.line?`<p><b>“${esc(o.line)}”</b></p>`:''}${offerSummary(o,R.id)}
         <div class="row"><button class="btn primary" data-choice="ok">${T('Accetta','Accept')}</button><button class="btn dark" data-choice="counter">${T('Controfferta','Counteroffer')}</button><button class="btn out" data-choice="no">${T('Rifiuta','Decline')}</button></div>`);
       closeSheet();
       if(c==='ok') resp={type:'accept'};
       else if(c==='no') resp={type:'reject'};
       else{
-        const n=await editOffer(invert(o),true,T(`Controfferta a ${esc(A.name)}`,`Counteroffer to ${esc(A.name)}`));
+        const n=await editFor(R,invert(o),true,T(`Controfferta a ${esc(A.name)}`,`Counteroffer to ${esc(A.name)}`));
         resp=n?{type:'counter',offer:n}:{type:'reject'};
       }
     }
-    if(resp.type==='accept'){execOffer(o);if(R.cpu&&!A.cpu) await say(T(`${esc(R.name)} accetta! 🤝`,`${esc(R.name)} accepts! 🤝`));return true;}
-    if(resp.type==='reject'){sfx('no');log(T(`${R.name} rifiuta ${A.name}`,`${R.name} declines ${A.name}`));setMsg(T(`${R.name} rifiuta l'offerta`,`${R.name} declines the offer`),'warn');render();if(R.cpu&&!A.cpu) await say(T(`${esc(R.name)} rifiuta.`,`${esc(R.name)} declines.`));return false;}
+    if(resp.type==='accept'){execOffer(o);if(R.cpu&&!A.cpu) await say(T(`${esc(R.name)} accetta! 🤝`,`${esc(R.name)} accepts! 🤝`),A);return true;}
+    if(resp.type==='reject'){sfx('no');log(T(`${R.name} rifiuta ${A.name}`,`${R.name} declines ${A.name}`));setMsg(T(`${R.name} rifiuta l'offerta`,`${R.name} declines the offer`),'warn');render();if(R.cpu&&!A.cpu) await say(T(`${esc(R.name)} rifiuta.`,`${esc(R.name)} declines.`),A);return false;}
     o=resp.offer;if(resp.line)o.line=resp.line;
     sfx('bid');log(T(`${R.name} fa una controfferta`,`${R.name} makes a counteroffer`));
   }
   log(T('Trattativa arenata','Negotiation stalled'));return false;
 }
-function say(t){return ask(`<h2>${t}</h2><div class="row"><button class="btn primary" data-choice="ok">OK</button></div>`).then(()=>closeSheet());}
-function canTrade(){return !!S&&!S.over&&!busy&&!cur().cpu&&['roll','end'].includes(S.phase)&&rivals(cur()).length>0;}
+function say(t,p){return askFor(p,'ok',true)(`<h2>${t}</h2><div class="row"><button class="btn primary" data-choice="ok">OK</button></div>`).then(()=>closeSheet());}
+function canTrade(){return !!S&&!S.over&&!busy&&isMine(cur())&&['roll','end'].includes(S.phase)&&rivals(cur()).length>0;}
 async function startTrade(pre={}){
-  if(!canTrade()) return; busy=true; render();
+  if(!canTrade()) return;
   const p=cur(),q=pre.to!=null&&!P(pre.to).out?P(pre.to):rivals(p)[0];
   const draft=blankOffer(p.id,q.id);
   if(pre.get) draft.get=pre.get.filter(i=>tradable(q).includes(i));
   if(pre.give) draft.give=pre.give.filter(i=>tradable(p).includes(i));
+  if(isGuest()){const o=await editOffer(draft,false,T('Proponi affare','Propose a deal'));closeSheet();if(o)netSend({t:'offer',o});return;}
+  busy=true; render();
   const o=await editOffer(draft,false,T('Proponi affare','Propose a deal'));
   closeSheet();
   if(o) await negotiate(o);
@@ -1142,7 +1172,8 @@ async function startTrade(pre={}){
 // ================= Dadi =================
 const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
 const dieHTML=n=>Array.from({length:9},(_,k)=>`<i class="${PIPS[n].includes(k)?'on':''}"></i>`).join('');
-async function animateDice(a,b){
+async function animateDice(a,b,remote){
+  if(!remote&&NET.on&&NET.host)hostFx({n:'dice',a,b});
   const d1=$('#d1'),d2=$('#d2');sfx('dice');
   d1.classList.add('rolling');d2.classList.add('rolling');
   for(let k=0;k<8;k++){d1.innerHTML=dieHTML(rnd6());d2.innerHTML=dieHTML(rnd6());await wait(55);}
@@ -1196,12 +1227,13 @@ function render(){
   if(!busy){$('#d1').innerHTML=dieHTML(S.dice[0]);$('#d2').innerHTML=dieHTML(S.dice[1]);}
   $('#pot').innerHTML=(S.champ?`<span>🏆 ${T('Gara','Race')} ${S.champ.idx+1}/${S.champ.n}</span>`:'')+(S.weekend!=null?`<span>🏁 GP ${SQ[S.weekend].code} ×2</span>`:'')+`<span class="${S.pot>=100?'full':''}">🚨 SC ${fmt(S.pot||0)}</span>`;
   $('#tower').innerHTML=S.players.map(q=>`<button class="chip ${q===p&&!S.over?'turn':''} ${q.out?'out':''}" data-act="pinfo" data-i="${q.id}">
-    ${tok(q)}<span class="nm">${esc(q.name)}${q.cpu?'<span class="b">🤖</span>':''}${q.stopgo?'<span class="b red">S&amp;G</span>':''}${q.flags?'<span class="b gold">🏁'+q.flags+'</span>':''}${q.loan?'<span class="b red">🦈</span>':''}${S.champ?`<span class="b">${S.champ.pts[q.id]}pt</span>`:''}</span>
+    ${tok(q)}<span class="nm">${esc(q.name)}${q.cpu?'<span class="b">🤖</span>':''}${q.stopgo?'<span class="b red">S&amp;G</span>':''}${q.flags?'<span class="b gold">🏁'+q.flags+'</span>':''}${q.loan?'<span class="b red">🦈</span>':''}${q.away?'<span class="b">📴</span>':''}${S.champ?`<span class="b">${S.champ.pts[q.id]}pt</span>`:''}</span>
     <span class="cash">${q.out?'OUT':fmt(q.cash)}</span></button>`).join('');
   renderActions();
   $('#ticker').innerHTML=`${ICON_LOG}<span>${esc(S.log[0]||'')}</span>`;
   const tab=$('#tab');tab.hidden=false;tab.disabled=!canTrade();
   scheduleAutoEnd();
+  if(NET.on&&NET.host)pushState();
   floats();
 }
 const IC={
@@ -1286,7 +1318,8 @@ function floats(){
   });
 }
 function banner(p){const b=$('#banner');if(b)b.innerHTML=`<div style="--pc:${p.color}">${esc(p.name)}</div>`;}
-function confetti(n=140){
+function confetti(n=140,remote){
+  if(!remote&&NET.on&&NET.host)hostFx({n:'confetti',c:n});
   if(reduced)return;
   const cv=$('#confetti');cv.hidden=false;const ctx=cv.getContext('2d'),s=devicePixelRatio||1;
   const W=cv.width=innerWidth*s,H=cv.height=innerHeight*s;
@@ -1301,18 +1334,18 @@ function confetti(n=140){
 }
 let autoT=null;
 function scheduleAutoEnd(){
-  if(!S||S.over||!S.autoEnd||S.autoOff||autoT||busy||S.phase!=='end'||cur().cpu)return;
+  if(!S||S.over||!S.autoEnd||S.autoOff||autoT||busy||S.phase!=='end'||!isMine(cur()))return;
   const g=GEN,turn=S.turn,round=S.round;
   autoT=setTimeout(()=>{autoT=null;
-    if(g!==GEN||!S||S.autoOff||S.phase!=='end'||busy||cur().cpu||S.turn!==turn||S.round!==round)return;
+    if(g!==GEN||!S||S.autoOff||S.phase!=='end'||busy||!isMine(cur())||S.turn!==turn||S.round!==round)return;
     if(!$('#backdrop').hidden||!$('#menu').hidden||document.querySelector('.coach')){scheduleAutoEnd();return;}
-    endTurn();},2600);
+    gameAct('end');},2600);
 }
 function cancelAutoEnd(){if(S)S.autoOff=true;if(autoT){clearTimeout(autoT);autoT=null;}}
 function renderActions(){
   const a=$('#actions'),p=cur();
   if(S.over){a.innerHTML=`<div class="row"><button class="btn primary" data-act="setup">${T('Nuova partita','New game')}</button><button class="btn dark" data-act="results">${T('Classifica','Results')}</button></div>`;return;}
-  if(p.cpu||S.phase==='auction'){a.innerHTML=`<div class="waitline">${tok(p)} ${esc(p.name)} ${T('in pista…','is racing…')}</div>`;return;}
+  if(!isMine(p)||S.phase==='auction'){a.innerHTML=`<div class="waitline">${tok(p)} ${esc(p.name)} ${p.cpu?T('in pista…','is racing…'):T('sta giocando…','is playing…')}</div>`;return;}
   let main='';
   if(S.phase==='roll') main=`<div class="row"><button class="btn primary" data-act="roll" ${busy?'disabled':''}>🎲 ${busy?'…':(S.doubles>0?T('Rilancia','Roll again'):T('Lancia','Roll'))}</button></div>`;
   else if(S.phase==='buy'){
@@ -1351,7 +1384,7 @@ function showInfo(i){
     if(o.mort) facts.push(T('Ipotecato','Mortgaged'));
     roysOn(i).forEach(r=>facts.push(`🕶️ ${esc(P(r.holder).name)} ${r.pct}% ${T('fino al giro','until lap')} ${r.until}`));
     h+=`<div class="facts">${facts.map(f=>`<span class="fact">${f}</span>`).join('')}</div>`;
-    if(S&&!S.over&&!cur().cpu){
+    if(S&&!S.over&&isMine(cur())){
       const me=cur(),turnOk=!busy&&['roll','end','buy'].includes(S.phase);
       if(o.owner===me.id&&turnOk) h+=`<h3>${T('Gestisci','Manage')}</h3><div class="ctl">${ctlButtons(me,i,'info')}</div>`;
       else if(o.owner!==me.id&&canTrade()){
@@ -1361,6 +1394,7 @@ function showInfo(i){
     }
   }
   openSheet(h+`<div class="row"><button class="btn dark" data-act="close">${T('Chiudi','Close')}</button></div>`);
+  if(NET.on)NET.panel='info:'+i;
 }
 function showPlayer(id){
   const q=P(id),mine=propsOf(q).sort((a,b)=>a-b);
@@ -1392,6 +1426,7 @@ function showManage(){
       ?`<div class="cl">${T(`Devi ${fmt(p.loan.owe)} entro il giro ${p.loan.due}. Dopo, riscuote con il 20% di mora.`,`You owe ${fmt(p.loan.owe)} by lap ${p.loan.due}. After that, he collects with a 20% penalty.`)}</div><div class="row"><button class="btn sm primary" data-act="repay" ${p.cash>=p.loan.owe?'':'disabled'}>${T('Restituisci','Repay')} ${fmt(p.loan.owe)}</button></div>`
       :`<div class="cl">${T('Contanti subito. Restituisci il 30% in più entro 3 giri.','Cash now. Pay back 30% more within 3 laps.')}</div><div class="row">${[100,200,300].map(n=>`<button class="btn sm primary" data-act="loan" data-v="${n}">+${fmt(n)}</button>`).join('')}</div>`}</div>
     <div class="row"><button class="btn dark" data-act="close">${T('Chiudi','Close')}</button></div>`);
+  if(NET.on)NET.panel='manage';
 }
 function showRules(){
   const R=T([['🏎️ Pole position','All\'inizio tutti lanciano i dadi: il più alto parte per primo.'],['🎲 Giro',`2 dadi, +${fmt(LAP_BONUS)} al via. Doppio = rilanci; 3 doppi = Stop & Go.`],
@@ -1406,6 +1441,7 @@ function showRules(){
     ['🏁 GP del weekend','A ogni giro un circuito ospita il GP: diritti ×2.'],
     ['🚨 Montepremi SC','Tasse, multe e bustarelle finiscono nel montepremi: chi si ferma sulla Safety Car lo incassa.'],
     ['🦈 Strozzino','Nella scheda Circuiti: fino a €300M subito, da restituire +30% entro 3 giri. In ritardo: +20% di mora.'],
+    ['🌐 Online','Stanza con codice per gli amici o partita casuale. Se qualcuno si disconnette guida la CPU finché non rientra.'],
     ['🏆 Campionato','3 o 5 gare a giri contati. Punti per l\'ordine d\'arrivo: 25-18-15-12-10-8. L\'ultima gara vale doppio.'],
     ['🏁 Fine','Ultimo in gara, oppure patrimonio più alto a fine giri.']],[['🏎️ Pole position','At the start everyone rolls the dice: the highest starts first.'],['🎲 Lap',`2 dice, +${fmt(LAP_BONUS)} when you pass GO. Double = roll again; 3 doubles = Stop & Go.`],
     ['🏟️ Circuits','Buy it or send it to auction. Full colour group = fees ×2.'],
@@ -1419,6 +1455,7 @@ function showRules(){
     ['🏁 Weekend GP','Every lap one circuit hosts the GP: fees ×2.'],
     ['🚨 SC jackpot','Taxes, fines and bribes go into the jackpot: land on the Safety Car to collect it.'],
     ['🦈 Loan shark','In the Circuits panel: up to €300M now, pay back +30% within 3 laps. Late: +20% penalty.'],
+    ['🌐 Online','Room code for friends or a random match. If someone disconnects, the CPU drives for them until they rejoin.'],
     ['🏆 Championship','3 or 5 races with a lap limit. Points by finishing order: 25-18-15-12-10-8. The last race counts double.'],
     ['🏁 Finish','Last driver standing, or highest net worth when the laps run out.']]);
   openSheet(`<h2>${T('Regolamento','Rules')}</h2><div class="rules">${R.map(([t,d])=>`<div><b>${t}</b>${d}</div>`).join('')}</div><p style="font-size:11px">${T('Tracciati disegnati da dati open source di Tomislav Bacinger (github.com/bacinger/f1-circuits, licenza MIT). Gioco di fantasia: nomi dei circuiti inventati, nessun legame con campionati, squadre o circuiti reali.','Track layouts drawn from open-source data by Tomislav Bacinger (github.com/bacinger/f1-circuits, MIT licence). A work of fiction: circuit names are invented and not affiliated with any real championship, team or circuit.')}</p><div class="row"><button class="btn primary" data-act="tutorial">🎓 ${T('Tutorial guidato','Guided tutorial')}</button><button class="btn dark" data-act="close">${T('Chiudi','Close')}</button></div>`);
@@ -1475,7 +1512,7 @@ function showGameOver(){
     <div class="rank">${r.map((p,k)=>`<div><span class="pos">${k+1}</span><span>${tok(p)} ${esc(p.name)}${p.out?' · out':''}</span><b>${fmt(netWorth(p))}</b></div>`).join('')}</div>
     ${chartHTML()}
     ${awards()}
-    <div class="row"><button class="btn primary" data-act="setup">${T('Rivincita','Rematch')}</button><button class="btn dark" data-act="home">🏠 Menu</button></div>`);
+    <div class="row">${NET.on?(NET.host?`<button class="btn primary" data-act="orematch">${T('Rivincita','Rematch')}</button>`:''):`<button class="btn primary" data-act="setup">${T('Rivincita','Rematch')}</button>`}<button class="btn dark" data-act="home">🏠 Menu</button></div>`);
 }
 
 // ================= Setup =================
@@ -1511,7 +1548,7 @@ async function chooseOrder(){
     for(const id of cont){
       const p=P(id);
       if(p.cpu){openSheet(view(`<div class="waitline">${tok(p)} ${esc(p.name)} ${T('lancia…','is rolling…')}</div>`),false);await wait(550);}
-      else await ask(view(`${handoff(p)}<div class="row"><button class="btn primary" data-choice="roll">🎲 ${T('Lancia','Roll')} ${esc(p.name)}</button></div>`));
+      else await askFor(p,'roll')(view(`${handoff(p)}<div class="row"><button class="btn primary" data-choice="roll">🎲 ${T('Lancia','Roll')} ${esc(p.name)}</button></div>`));
       res[id]=[rnd6(),rnd6()];sfx('dice');
       openSheet(view(''),false);await wait(450);
     }
@@ -1524,6 +1561,7 @@ async function chooseOrder(){
   sfx('engine');
   const pole=`<div class="pole">${tok(w)} ${esc(w.name)} ${T('parte in pole!','starts on pole!')}</div>`;
   if(S.players.every(p=>p.cpu)){openSheet(view(pole),false);await wait(1200);}
+  else if(NET.on){openSheet(view(pole),false);await wait(1800);}
   else await ask(view(pole+`<div class="row"><button class="btn primary" data-choice="go">🚦 ${T('Semaforo verde','Lights out')}</button></div>`));
   closeSheet();
   return w.id;
@@ -1537,7 +1575,7 @@ async function startGame(champ=null){
     const names=shuffle(RACES.filter(r=>r!==FINALE)).slice(0,n-1).concat(FINALE);
     champ={n,idx:0,names,pts:setup.players.map(()=>0),wins:setup.players.map(()=>0),limit:setup.climit||12,results:[]};
   }
-  S={players:setup.players.map((p,i)=>({id:i,name:p.name,color:p.color,cpu:p.cpu,cash:START_CASH,pos:0,out:false,stopgo:false,flags:0,loan:null})),
+  S={players:setup.players.map((p,i)=>({id:i,name:p.name,color:p.color,cpu:p.cpu,uid:p.uid||null,cash:START_CASH,pos:0,out:false,stopgo:false,flags:0,loan:null})),
     own:{},roys:[],pacts:[],turn:0,phase:'roll',doubles:0,lastDbl:false,dice:[5,2],round:1,limit:setup.limit,
     deck:shuffle([...CARDS.keys()]),deckPos:0,log:[],msg:null,over:false,pending:null,asked:{},
     pot:0,weekend:null,stats:{},first:0,fast:setup.fast,diff:setup.diff,autoEnd:setup.autoEnd,hist:[],champ};
@@ -1546,7 +1584,7 @@ async function startGame(champ=null){
   $('#cars').innerHTML='';for(const k in carRot)delete carRot[k];for(const k in prevCash)delete prevCash[k];
   closeSheet();render();
   if(champ){sfx('engine');await ask(`<h2>🏆 ${esc(champ.names[champ.idx])}</h2><p>${T('Gara','Race')} ${champ.idx+1} ${T('di','of')} ${champ.n} · ${champ.limit} ${T('giri','laps')}${champ.idx===champ.n-1?T(' · <b>punti doppi</b>',' · <b>double points</b>'):''}</p>${champ.idx?champTable(champ):''}<div class="row"><button class="btn primary" data-choice="go">${T('Allo schieramento','To the grid')}</button></div>`);closeSheet();}
-  if(!tutDone()) await tutorial();
+  if(!NET.on&&!tutDone()) await tutorial();
   const w=await chooseOrder();
   S.first=S.turn=w;S.phase='roll';recordHist();
   log(T('Semaforo verde!','Lights out!'));pickWeekend();sfx('engine');startTurn();
@@ -1563,6 +1601,8 @@ function showMenu(){
       ${can?`<button class="btn primary mbig" data-act="resume">▶ ${T('Continua','Continue')} <small>${sv.champ?esc(sv.champ.names[sv.champ.idx])+' · ':''}${T('giro','lap')} ${sv.round} ${who}</small></button>`:''}
       <button class="btn ${can?'dark':'primary mbig'}" data-act="newsingle">🏁 ${T('Partita veloce','Quick game')}</button>
       <button class="btn dark" data-act="newchamp">🏆 ${T('Campionato','Championship')}</button>
+      ${lsGet(KEY_ON)?`<button class="btn dark" data-act="resumeon">↩︎ ${T('Riprendi partita online','Resume online game')}</button>`:''}
+      <button class="btn dark" data-act="online">🌐 ${T('Online','Online')} <small>${T('amici o casuale','friends or random')}</small></button>
       <button class="btn" data-act="learn">🎓 ${T('Impara a giocare','How to play')}</button>
       <button class="btn" data-act="rules">📖 ${T('Regolamento','Rules')}</button>
       <button class="btn" data-act="lang">${T('🇬🇧 English','🇮🇹 Italiano')}</button>
@@ -1574,6 +1614,10 @@ function showMenu(){
 function hideMenu(){$('#menu').hidden=true;}
 function showPause(){
   if(!S){showMenu();return;}
+  if(NET.on){openSheet(`<h2>⏸️ Online · ${esc(NET.code)}</h2><div class="plist">
+      <button class="btn primary" data-act="close">▶ ${T('Riprendi','Resume')}</button>
+      <button class="btn" data-act="rules">📖 ${T('Regolamento','Rules')}</button>
+      <button class="btn out" data-act="oleave">🏳️ ${NET.host?T('Chiudi la partita per tutti','End the game for everyone'):T('Esci dalla partita','Leave the game')}</button></div>`);return;}
   openSheet(`<h2>⏸️ ${T('Pausa','Paused')}</h2>
     <div class="plist">
       <button class="btn primary" data-act="close">▶ ${T('Riprendi','Resume')}</button>
@@ -1592,6 +1636,7 @@ function quitToMenu(discard){
   if(discard){try{localStorage.removeItem(KEY);}catch(e){}}
   else if(S&&!S.over){if(S.phase==='auction'||S.phase==='order')S.phase=S.phase==='order'?'order':'buy';save();}
   else if(S&&S.over){try{localStorage.removeItem(KEY);}catch(e){}}
+  if(NET.on)netLeave(discard||!S||S.over);
   S=null;closeSheet();const co=document.querySelector('.coach');if(co)co.remove();
   $('#cars').innerHTML='';for(const k in carRot)delete carRot[k];for(const k in prevCash)delete prevCash[k];
   render();showMenu();
@@ -1609,6 +1654,299 @@ function resumeSaved(){
   render();
   if(S.phase==='stopgo'){cur().stopgo=true;startTurn();}
   else if(cur().cpu) cpuTurn();
+}
+
+// ================= Online (Firebase Realtime Database) =================
+// Incolla qui la configurazione web del progetto Firebase (Impostazioni progetto → Le tue app → Configurazione SDK).
+// Finché resta null, il pulsante Online spiega che la modalità non è ancora attiva.
+const FIREBASE_CONFIG=null;
+const FB_VER='10.12.2';
+const NAME_KEY='paddock-tycoon-name',KEY_ON='paddock-tycoon-online',LAST_ROOM='paddock-tycoon-lastroom';
+const BAD_NAME=/(cazz|merd|stronz|puttan|troia|vaffan|coglion|frocio|negr|fuck|shit|bitch|cunt|nigg|fagg|porn|dick|pussy|hitler|nazi)/i;
+function cleanName(n){n=String(n||'').replace(/[<>&"'`]/g,'').replace(/\s+/g,' ').trim().slice(0,12);if(!n||BAD_NAME.test(n))n=T('Pilota','Driver')+' '+(10+Math.floor(Math.random()*90));return n;}
+const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+const lsSet=(k,v)=>{try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}};
+function genCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ';let c='';for(let i=0;i<5;i++)c+=A[Math.floor(Math.random()*A.length)];return c;}
+const room=p=>`rooms/${NET.code}${p?'/'+p:''}`;
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('script'));document.head.appendChild(s);});}
+const useLocalNet=()=>lsGet('paddock-tycoon-localnet')==='1';
+const onlineReady=()=>!!FIREBASE_CONFIG||useLocalNet();
+
+async function netInit(){
+  if(NET.db)return NET.db;
+  if(useLocalNet()){NET.db=localBackend();await NET.db.ready;}
+  else{
+    if(!FIREBASE_CONFIG)throw new Error('noconfig');
+    for(const m of ['app','auth','database'])await loadScript(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-${m}-compat.js`);
+    if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
+    await firebase.auth().signInAnonymously();
+    NET.db=fbBackend();
+  }
+  NET.uid=NET.db.uid;return NET.db;
+}
+function fbBackend(){
+  const d=firebase.database(),r=p=>d.ref('pt/'+p);
+  return {uid:firebase.auth().currentUser.uid,
+    set:(p,v)=>r(p).set(v),update:(p,v)=>r(p).update(v),remove:p=>r(p).remove(),
+    push:(p,v)=>r(p).push(v),get:async p=>(await r(p).get()).val(),
+    on:(p,cb)=>{const h=s=>cb(s.val());r(p).on('value',h);return()=>r(p).off('value',h);},
+    onAdd:(p,cb)=>{const h=s=>cb(s.key,s.val());r(p).on('child_added',h);return()=>r(p).off('child_added',h);},
+    onDisc:(p,v)=>v===null?r(p).onDisconnect().remove():r(p).onDisconnect().set(v),
+    txn:(p,fn)=>r(p).transaction(fn).then(x=>({committed:x.committed}))};
+}
+// Motore locale: simula il database tra le schede dello stesso browser (solo per i test).
+function localBackend(){
+  const ch=new BroadcastChannel('pt-localnet');let tree={};const L=[],discs=[];
+  const uid='u'+Math.random().toString(36).slice(2,10);
+  const parts=p=>p.split('/').filter(Boolean);
+  const getp=p=>parts(p).reduce((o,k)=>o&&typeof o==='object'?o[k]:undefined,tree);
+  const setp=(p,v)=>{const ks=parts(p);let o=tree;for(let i=0;i<ks.length-1;i++){if(typeof o[ks[i]]!=='object'||o[ks[i]]===null)o[ks[i]]={};o=o[ks[i]];}
+    if(v===null||v===undefined)delete o[ks[ks.length-1]];else o[ks[ks.length-1]]=JSON.parse(JSON.stringify(v));};
+  const fire=()=>L.slice().forEach(l=>l.check());
+  const apply=op=>{if(op.k==='set')setp(op.p,op.v);else if(op.k==='upd')for(const x in op.v)setp(op.p+'/'+x,op.v[x]);};
+  const doOp=op=>{apply(op);ch.postMessage(op);setTimeout(fire,0);};
+  let gotTree;const ready=new Promise(r=>{gotTree=r;setTimeout(r,250);});
+  ch.onmessage=e=>{const m=e.data;
+    if(m.k==='hello'){ch.postMessage({k:'tree',v:tree});return;}
+    if(m.k==='tree'){if(!Object.keys(tree).length&&m.v)tree=m.v;gotTree();setTimeout(fire,0);return;}
+    apply(m);setTimeout(fire,0);};
+  ch.postMessage({k:'hello'});
+  addEventListener('pagehide',()=>discs.forEach(([p,v])=>{apply({k:'set',p,v});ch.postMessage({k:'set',p,v});}));
+  return {uid,ready,
+    set:(p,v)=>{doOp({k:'set',p,v});return Promise.resolve();},
+    update:(p,v)=>{doOp({k:'upd',p,v});return Promise.resolve();},
+    remove:p=>{doOp({k:'set',p,v:null});return Promise.resolve();},
+    push:(p,v)=>{const id='k'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);doOp({k:'set',p:p+'/'+id,v});return Promise.resolve({key:id});},
+    get:async p=>JSON.parse(JSON.stringify(getp(p)??null)),
+    on:(p,cb)=>{let last;const l={check(){const v=JSON.stringify(getp(p)??null);if(v!==last){last=v;cb(JSON.parse(v));}}};L.push(l);setTimeout(()=>l.check(),0);return()=>{const i=L.indexOf(l);if(i>=0)L.splice(i,1);};},
+    onAdd:(p,cb)=>{const seen=new Set();const l={check(){const o=getp(p)||{};for(const k of Object.keys(o).sort()){if(!seen.has(k)){seen.add(k);cb(k,o[k]);}}}};L.push(l);setTimeout(()=>l.check(),0);return()=>{const i=L.indexOf(l);if(i>=0)L.splice(i,1);};},
+    onDisc:(p,v)=>{discs.push([p,v]);},
+    txn:async(p,fn)=>{const v=fn(getp(p)??null);if(v!==undefined)doOp({k:'set',p,v});return {committed:v!==undefined};}};
+}
+function netOff(){NET.offs.forEach(f=>{try{f();}catch(e){}});NET.offs=[];}
+function netReset(){netOff();clearInterval(NET.cdT);clearInterval(NET.tick);clearTimeout(NET.timer);
+  Object.assign(NET,{on:false,host:false,code:null,pub:false,started:false,pending:{},overlay:null,priv:false,prompt:null,localSheet:false,panel:null,roShown:false,cdT:null,cd:null,tick:null,timer:null,overShown:false,lobby:{}});
+  paintNet();}
+function netSend(m){if(NET.db&&NET.code)NET.db.push(room('inbox'),{...m,from:NET.uid,ts:Date.now()});}
+function netError(e){
+  const msg=e&&e.message==='noconfig'?T("L'online non è ancora attivo in questa versione del gioco.",'Online play is not enabled in this version yet.')
+    :T('Connessione non riuscita. Controlla la rete e riprova.','Connection failed. Check your network and try again.');
+  openSheet(`<h2>🌐 Online</h2><p>${msg}</p><div class="row"><button class="btn dark" data-act="online">${T('Indietro','Back')}</button></div>`,false);
+}
+const netTry=fn=>async(...a)=>{try{return await fn(...a);}catch(e){netError(e);}};
+function paintNet(){const el=$('#netpill');if(!el)return;
+  if(!NET.on||!NET.started){el.hidden=true;return;}
+  el.hidden=false;el.className='netpill'+(NET.hostAway?' warn':'');
+  el.textContent=NET.hostAway?T('📴 Host disconnesso: attendi…','📴 Host disconnected: please wait…'):`🌐 ${NET.code}`;}
+
+// ---------- Schermate ----------
+function showOnline(code=''){
+  hideMenu();
+  if(!onlineReady()){netError(new Error('noconfig'));return;}
+  const last=lsGet(LAST_ROOM);
+  openSheet(`<h2>🌐 ${T('Gioca online','Play online')}</h2>
+    <label class="fld" for="oname">${T('Il tuo nome','Your name')}<input type="text" id="oname" maxlength="12" value="${esc(lsGet(NAME_KEY)||'')}" placeholder="${T('Nome pilota','Driver name')}"></label>
+    <div class="plist">
+      <button class="btn primary" data-act="quick">⚡ ${T('Partita casuale','Random match')} <small>${T('con altri giocatori','with other players')}</small></button>
+      <button class="btn dark" data-act="create">➕ ${T('Crea stanza per amici','Create a room for friends')}</button>
+      <div class="joinrow"><input type="text" id="ocode" maxlength="5" placeholder="${T('CODICE','CODE')}" value="${esc(code)}" autocapitalize="characters" autocomplete="off" aria-label="${T('Codice stanza','Room code')}"><button class="btn" data-act="join">🔑 ${T('Entra','Join')}</button></div>
+      ${last&&!code?`<button class="btn" data-act="rejoin" data-v="${esc(last)}">↩︎ ${T('Rientra nella stanza','Rejoin room')} ${esc(last)}</button>`:''}
+      <button class="btn out" data-act="menu">‹ Menu</button>
+    </div>`,false);
+}
+function readName(){const el=$('#oname');const v=cleanName(el?el.value:lsGet(NAME_KEY));lsSet(NAME_KEY,v);return v;}
+function lobbyHTML(){
+  const Lb=NET.lobby||{},ps=Lb.players||{},meta=Lb.meta||{},ids=Object.keys(ps).filter(u=>ps[u].online!==false);
+  const cpus=NET.host?NET.cpus:(meta.cpus||0);
+  const link=`${location.origin}${location.pathname}#${NET.code}`;
+  const seats=ids.map((u,k)=>`<div class="seat">${tok({color:COLORS[k%6]})}<b>${esc(ps[u].name)}</b>${u===meta.host?'<span class="b gold">HOST</span>':''}${u===NET.uid?`<span class="b">${T('tu','you')}</span>`:''}</div>`).join('')
+    +Array.from({length:cpus},(_,k)=>`<div class="seat">${tok({color:COLORS[(ids.length+k)%6]})}<b>CPU ${k+1}</b><span class="b">🤖</span></div>`).join('');
+  const cd=NET.host?NET.cd:meta.cd;
+  const top=NET.pub
+    ?`<p>${ids.length<2?T('⏳ Cerchiamo altri giocatori…','⏳ Looking for other players…'):T('🚦 Si parte tra','🚦 Starting in')+` <b>${cd!=null?cd:'…'}s</b>`}</p>`
+    :`<div class="joinrow"><input type="text" readonly value="${esc(link)}" id="olink" aria-label="Link"><button class="btn" data-act="copylink">📋 ${T('Copia link','Copy link')}</button></div><p>${T('Gli amici aprono il link, oppure scelgono “Entra” e scrivono il codice.','Friends open the link, or tap “Join” and type the code.')}</p>`;
+  const lonely=NET.pub&&ids.length<2&&Date.now()-(NET.lobbyT||0)>25000;
+  return `<h2>${NET.pub?'⚡ '+T('Partita casuale','Random match'):'🔑 '+T('Stanza','Room')} <span class="code">${esc(NET.code)}</span></h2>${top}
+    <div class="seats">${seats}</div>
+    ${NET.host
+      ?`<div class="row">${NET.pub?(lonely?`<button class="btn sm" data-act="cpustart">🤖 ${T('Intanto gioca con le CPU','Play with CPUs meanwhile')}</button>`:''):`<button class="btn sm" data-act="addcpu" ${ids.length+cpus>=6?'disabled':''}>+ CPU</button><button class="btn sm" data-act="rmcpu" ${cpus?'':'disabled'}>− CPU</button>`}</div>
+        <div class="row">${NET.pub?'':`<button class="btn primary" data-act="ostart" ${ids.length+cpus>=2?'':'disabled'}>🚦 ${T('Via!','Go!')}</button>`}<button class="btn out" data-act="oleave">${T('Esci','Leave')}</button></div>`
+      :`<p class="waitline">⏳ ${NET.pub?T('Attendi gli altri piloti…','Waiting for the other drivers…'):T("In attesa che l'host avvii la partita…",'Waiting for the host to start…')}</p><div class="row"><button class="btn out" data-act="oleave">${T('Esci','Leave')}</button></div>`}`;
+}
+function showLobby(){if(!NET.on||NET.started)return;openSheet(lobbyHTML(),false);}
+
+// ---------- Stanze ----------
+async function joinSelf(name){await NET.db.update(room(`players/${NET.uid}`),{name,online:true,ts:Date.now()});NET.db.onDisc(room(`players/${NET.uid}/online`),false);}
+async function createRoom(pub){
+  const name=readName();await netInit();const db=NET.db;
+  let code=genCode();for(let k=0;k<5&&await db.get(`rooms/${code}/meta`);k++)code=genCode();
+  netReset();Object.assign(NET,{on:true,host:true,code,pub:!!pub,cpus:pub?0:1,lobbyT:Date.now()});
+  await db.set(room('meta'),{host:NET.uid,pub:!!pub,status:'lobby',ts:Date.now(),hostOnline:true,cpus:NET.cpus});
+  db.onDisc(room('meta/hostOnline'),false);
+  await joinSelf(name);
+  if(pub){await db.set(`public/${code}`,{n:1,max:4,ts:Date.now()});db.onDisc(`public/${code}`,null);}
+  if(!pub)lsSet(LAST_ROOM,code);
+  hostListen();showLobby();
+}
+async function joinRoom(code,quiet){
+  code=String(code||'').toUpperCase().replace(/[^A-Z]/g,'').slice(0,5);
+  if(code.length!==5){if(!quiet)toastSheet(T('Il codice ha 5 lettere.','The code has 5 letters.'));return false;}
+  const name=readName();await netInit();const db=NET.db;
+  const meta=await db.get(`rooms/${code}/meta`);
+  if(!meta||meta.status==='closed'){if(!quiet)toastSheet(T('Stanza non trovata.','Room not found.'));return false;}
+  const me=await db.get(`rooms/${code}/players/${NET.uid}`);
+  if(meta.status!=='lobby'&&!me){if(!quiet)toastSheet(T('La partita è già iniziata.','That game has already started.'));return false;}
+  const ps=await db.get(`rooms/${code}/players`)||{};
+  if(!me&&Object.values(ps).filter(x=>x.online!==false).length+(meta.cpus||0)>=6){if(!quiet)toastSheet(T('La stanza è piena.','The room is full.'));return false;}
+  netReset();Object.assign(NET,{on:true,host:meta.host===NET.uid,code,pub:!!meta.pub,started:false,lobbyT:Date.now()});
+  await joinSelf(name);lsSet(LAST_ROOM,meta.pub?null:code);
+  if(NET.host){NET.cpus=meta.cpus||0;hostListen();if(meta.status==='lobby')showLobby();}
+  else{guestListen();if(meta.status==='lobby')showLobby();else openSheet(`<p class="waitline">⏳ ${T('Rientro in partita…','Rejoining the game…')}</p>`,false);}
+  return true;
+}
+async function quickMatch(){
+  readName();await netInit();const db=NET.db;
+  const list=await db.get('public')||{},now=Date.now();
+  const cand=Object.entries(list).filter(([,v])=>v&&v.n<v.max&&now-v.ts<180000).sort((a,b)=>a[1].ts-b[1].ts);
+  for(const [code] of cand){const r=await db.txn(`public/${code}/n`,n=>n==null||n>=4?undefined:n+1);if(r.committed&&await joinRoom(code,true))return;}
+  await createRoom(true);
+}
+function toastSheet(msg){openSheet(`<h2>🌐 Online</h2><p>${msg}</p><div class="row"><button class="btn dark" data-act="online">${T('Indietro','Back')}</button></div>`,false);}
+
+// ---------- Host ----------
+function hostListen(){
+  const db=NET.db;netOff();NET.lobby={meta:null,players:{}};
+  NET.offs.push(db.on(room('meta'),m=>{NET.lobby.meta=m;}));
+  NET.offs.push(db.on(room('players'),ps=>{NET.lobby.players=ps||{};
+    if(!NET.started){if(NET.pub){db.update(`public/${NET.code}`,{n:Object.values(ps||{}).filter(x=>x.online!==false).length});pubCountdown();}showLobby();}
+    else hostPresence(ps||{});}));
+  NET.offs.push(db.onAdd(room('inbox'),(k,m)=>hostInbox(k,m)));
+  db.update(room('meta'),{hostOnline:true});
+  if(NET.pub&&!NET.tick)NET.tick=setInterval(()=>{if(!NET.started)showLobby();},5000);
+}
+function pubCountdown(){
+  if(!NET.host||!NET.pub||NET.started)return;
+  const n=Object.values(NET.lobby.players||{}).filter(x=>x.online!==false).length;
+  if(n>=4){clearInterval(NET.cdT);NET.cdT=null;startOnline();return;}
+  if(n>=2&&!NET.cdT){NET.cd=20;NET.cdT=setInterval(()=>{NET.cd--;NET.db.update(room('meta'),{cd:NET.cd});if(NET.cd<=0){clearInterval(NET.cdT);NET.cdT=null;startOnline();}else showLobby();},1000);}
+  if(n<2&&NET.cdT){clearInterval(NET.cdT);NET.cdT=null;NET.cd=null;NET.db.update(room('meta'),{cd:null});}
+}
+async function startOnline(){
+  if(NET.started)return;NET.started=true;clearInterval(NET.cdT);clearInterval(NET.tick);NET.tick=null;
+  const ps=NET.lobby.players||{},ids=Object.keys(ps).filter(u=>ps[u].online!==false);
+  setup.mode='single';if(!setup.limit)setup.limit=20;
+  setup.players=ids.map((u,k)=>({name:cleanName(ps[u].name),cpu:false,color:COLORS[k%6],uid:u}))
+    .concat(Array.from({length:NET.cpus},(_,k)=>({name:'CPU '+(k+1),cpu:true,color:COLORS[(ids.length+k)%6]})));
+  await NET.db.update(room('meta'),{status:'play',cpus:NET.cpus,cd:null});
+  if(NET.pub)NET.db.remove(`public/${NET.code}`);
+  closeSheet();paintNet();startGame(null);
+}
+function pushState(){
+  if(!NET.on||!NET.host||!NET.started||!S||NET.timer)return;
+  const wait=Math.max(0,200-(Date.now()-(NET.lastPush||0)));
+  NET.timer=setTimeout(()=>{NET.timer=null;NET.lastPush=Date.now();if(!S||!NET.on)return;
+    const s2={...S,log:S.log.slice(0,15),hist:S.over?S.hist:[],asked:{}};
+    NET.db.set(room('state'),{j:JSON.stringify(s2),busy:!!busy,ov:NET.overlay||null,t:Date.now()});},wait);
+}
+function hostFx(o){if(!NET.on||!NET.host||!NET.started)return;NET.fxs=(NET.fxs||0)+1;NET.db.set(room('fx'),{...o,s:NET.fxs});}
+function remoteAsk(uid,msg,def){const id=++NET.seq;return new Promise(res=>{NET.pending[id]={res,uid,def};NET.db.set(room(`to/${uid}`),{...msg,id});});}
+function sanitizeOffer(o){
+  if(!o||typeof o!=='object')return null;
+  const ints=a=>Array.isArray(a)?a.map(Number).filter(i=>Number.isInteger(i)&&i>=0&&i<32):[];
+  const cash=v=>Math.max(0,Math.floor(+v||0));
+  const roy=r=>({pct:PCTS.includes(+(r&&r.pct))?+r.pct:0,turns:[1,2,3].includes(+(r&&r.turns))?+r.turns:2});
+  return {from:+o.from,to:+o.to,give:ints(o.give),get:ints(o.get),cashGive:cash(o.cashGive),cashGet:cash(o.cashGet),royGive:roy(o.royGive),royGet:roy(o.royGet),pact:[0,1,2,3].includes(+o.pact)?+o.pact:0};
+}
+function hostInbox(k,m){
+  NET.db.remove(room(`inbox/${k}`));
+  if(!m||!S)return;
+  const p=S.players.find(q=>q.uid&&q.uid===m.from);if(!p)return;
+  if(m.t==='choice'||m.t==='edited'){const pd=NET.pending[m.id];
+    if(pd&&pd.uid===m.from){delete NET.pending[m.id];NET.db.remove(room(`to/${m.from}`));pd.res(m.t==='choice'?String(m.v):sanitizeOffer(m.o));}return;}
+  if(S.over||cur()!==p||p.cpu)return;
+  if(m.t==='act'&&GAME_ACT[m.a]){GAME_ACT[m.a](m.ds||{});return;}
+  if(m.t==='offer'&&!busy&&['roll','end'].includes(S.phase)){const o=sanitizeOffer(m.o);if(!o||o.from!==p.id)return;
+    (async()=>{busy=true;render();await negotiate(o);busy=false;save();render();})();}
+}
+function hostPresence(ps){
+  if(!S)return;
+  for(const p of S.players){
+    if(!p.uid||p.out)continue;
+    const on=!!ps[p.uid]&&ps[p.uid].online!==false;
+    if(!on&&!p.away){
+      p.away=true;p.cpu=true;log(T(`📴 ${p.name} si è disconnesso: guida la CPU`,`📴 ${p.name} disconnected: the CPU takes over`));
+      for(const id in NET.pending){const pd=NET.pending[id];if(pd.uid===p.uid){delete NET.pending[id];NET.db.remove(room(`to/${p.uid}`));pd.res(pd.def);}}
+      save();render();
+      if(!S.over&&cur()===p&&!busy&&!cpuActive&&['roll','end','buy'].includes(S.phase))cpuTurn();
+    }else if(on&&p.away){p.away=false;p.cpu=false;log(T(`📶 ${p.name} è tornato in pista`,`📶 ${p.name} is back on track`));save();render();}
+  }
+}
+
+// ---------- Ospite ----------
+function guestListen(){
+  const db=NET.db;netOff();NET.lobby={meta:null,players:{}};let fxInit=false;
+  NET.offs.push(db.on(room('meta'),m=>{NET.lobby.meta=m;
+    if(!m||m.status==='closed'){netGone(T("L'host ha chiuso la partita.",'The host closed the game.'));return;}
+    if(m.status==='lobby'&&NET.started){NET.started=false;NET.overShown=false;S=null;render();}
+    if(m.status==='lobby')showLobby();
+    NET.hostAway=m.hostOnline===false;paintNet();}));
+  NET.offs.push(db.on(room('players'),ps=>{NET.lobby.players=ps||{};if(!NET.started)showLobby();}));
+  NET.offs.push(db.on(room('state'),v=>guestState(v)));
+  NET.offs.push(db.on(room(`to/${NET.uid}`),v=>guestPrompt(v)));
+  NET.offs.push(db.on(room('fx'),v=>{if(!v)return;if(!fxInit){fxInit=true;NET.fxs=v.s;return;}if(v.s<=(NET.fxs||0))return;NET.fxs=v.s;
+    if(v.n==='dice')animateDice(v.a,v.b,true);else if(v.n==='confetti')confetti(v.c,true);else sfx(v.n,true);}));
+}
+function guestState(v){
+  if(!v||!v.j||!NET.on)return;
+  if(NET.lobby.meta&&NET.lobby.meta.status==='lobby')return;
+  const first=!NET.started;NET.started=true;
+  if(first){hideMenu();musicStop();for(const k in carRot)delete carRot[k];for(const k in prevCash)delete prevCash[k];$('#cars').innerHTML='';if(!NET.prompt)closeSheet();paintNet();}
+  const pt=S&&S.turn,pr=S&&S.round;
+  try{S=JSON.parse(v.j);}catch(e){return;}
+  busy=!!v.busy;
+  if(!first&&(pt!==S.turn||pr!==S.round)&&!S.over){banner(cur());if(isMine(cur()))sfx('bid',true);}
+  render();
+  if(NET.prompt)return;
+  if(S.over){if(!NET.overShown){NET.overShown=true;setTimeout(()=>{if(!NET.prompt&&S&&S.over)showGameOver();},900);}return;}
+  if(NET.localSheet){if(NET.panel==='manage')showManage();else if(NET.panel&&NET.panel.startsWith('info:'))showInfo(+NET.panel.slice(5));return;}
+  if(v.ov){openSheet(v.ov,false);$('#sheet').classList.add('ro');NET.roShown=true;}
+  else if(NET.roShown)closeSheet();
+}
+function guestPrompt(v){
+  if(!v){if(NET.prompt){NET.prompt=null;choice=null;trResolve=null;closeSheet();}return;}
+  if(NET.prompt===v.id)return;NET.prompt=v.id;sfx('card',true);
+  if(v.kind==='ask'){choice=val=>{NET.prompt=null;netSend({t:'choice',id:v.id,v:val});closeSheet();};openSheet(v.html,false);}
+  else editOffer(v.o,v.locked,v.title).then(o=>{NET.prompt=null;closeSheet();netSend({t:'edited',id:v.id,o:o||null});});
+}
+function netGone(msg){
+  netReset();S=null;GEN++;busy=false;cpuActive=false;choice=null;trResolve=null;
+  $('#cars').innerHTML='';render();
+  openSheet(`<h2>🌐 Online</h2><p>${msg}</p><div class="row"><button class="btn primary" data-act="menu">🏠 Menu</button></div>`,false);
+}
+async function netLeave(endForAll){
+  if(!NET.on)return;
+  const db=NET.db,code=NET.code,wasHost=NET.host,started=NET.started;
+  try{
+    if(wasHost){
+      if(endForAll||!started){await db.update(`rooms/${code}/meta`,{status:'closed',hostOnline:false});if(NET.pub)db.remove(`public/${code}`);setTimeout(()=>db.remove(`rooms/${code}`),4000);lsSet(KEY_ON,null);lsSet(LAST_ROOM,null);}
+      else await db.update(`rooms/${code}/meta`,{hostOnline:false});
+    }else{await db.update(`rooms/${code}/players/${NET.uid}`,{online:false});if(!started)db.remove(`rooms/${code}/players/${NET.uid}`);}
+  }catch(e){}
+  netReset();
+}
+async function resumeOnline(){
+  const sv=(()=>{try{return JSON.parse(lsGet(KEY_ON));}catch(e){return null;}})();
+  if(!sv||!sv.net){showMenu();return;}
+  await netInit();const meta=await NET.db.get(`rooms/${sv.net.code}/meta`);
+  if(!meta||meta.status==='closed'||meta.host!==NET.uid){lsSet(KEY_ON,null);toastSheet(T('Questa stanza non esiste più.','This room no longer exists.'));return;}
+  hideMenu();musicStop();GEN++;
+  netReset();Object.assign(NET,{on:true,host:true,code:sv.net.code,pub:!!sv.net.pub,started:true,cpus:meta.cpus||0});
+  S=sv;busy=false;cpuActive=false;
+  await joinSelf(lsGet(NAME_KEY)||S.players.find(p=>p.uid===NET.uid)?.name||'Host');
+  hostListen();paintNet();
+  if(S.phase==='auction')S.phase='buy';if(S.phase==='buy'&&S.pending==null)S.phase='end';if(S.phase==='order')S.phase='roll';
+  render();pushState();
+  if(S.phase==='stopgo'){cur().stopgo=true;startTurn();}else if(cur().cpu)cpuTurn();
 }
 
 // ================= Tutorial =================
@@ -1668,8 +2006,23 @@ async function goFullscreen(){
   try{if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen({navigationUI:'hide'});}catch(e){}
   try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape');}catch(e){}
 }
-const ACT={
+const GAME_ACT={
   roll:()=>roll(),buy:()=>buy(),auction:()=>toAuction(),end:()=>endTurn(),
+  up:d=>{const i=+d.i;if(canUpgrade(cur(),i)){upgrade(i);save();render();}},
+  down:d=>{const i=+d.i;if(S.own[i]&&S.own[i].owner===cur().id&&S.own[i].level>0){sellUpgrade(i);save();render();}},
+  mort:d=>{const i=+d.i;if(S.own[i]&&canMortgage(i)&&S.own[i].owner===cur().id){mortgage(i);save();render();}},
+  unmort:d=>{const i=+d.i;if(S.own[i]&&S.own[i].owner===cur().id&&S.own[i].mort){unmortgage(i);save();render();}},
+  loan:d=>{const p=cur();if(p.loan||p.cpu)return;const n=+d.v;if(![100,200,300].includes(n))return;p.cash+=n;p.loan={owe:Math.round(n*1.3),due:S.round+3};sfx('coin');log(T(`🦈 ${p.name} prende ${fmt(n)} dallo strozzino`,`🦈 ${p.name} borrows ${fmt(n)} from the loan shark`));save();render();},
+  repay:()=>{const p=cur();if(!p.loan||p.cash<p.loan.owe)return;p.cash-=p.loan.owe;log(T(`${p.name} salda lo strozzino (${fmt(p.loan.owe)})`,`${p.name} pays off the loan shark (${fmt(p.loan.owe)})`));p.loan=null;sfx('pay');save();render();},
+};
+function gameAct(a,b){
+  if(!S||S.over||!isMine(cur()))return false;
+  const d=b&&b.dataset?{i:b.dataset.i,v:b.dataset.v}:(b||{});
+  if(isGuest()){netSend({t:'act',a,ds:d});return true;}
+  GAME_ACT[a](d);return true;
+}
+const ACT={
+  roll:b=>gameAct('roll',b),buy:b=>gameAct('buy',b),auction:b=>gameAct('auction',b),end:b=>gameAct('end',b),
   info:b=>showInfo(+b.dataset.i),pinfo:b=>showPlayer(+b.dataset.i),close:()=>closeSheet(),log:()=>showLog(),
   pause:()=>showPause(),home:()=>quitToMenu(true),menu:()=>{if(S)quitToMenu(true);else{closeSheet();showMenu();}},
   tomenu:()=>quitToMenu(false),abandon:()=>confirmAbandon(),doabandon:()=>quitToMenu(true),
@@ -1682,18 +2035,29 @@ const ACT={
   music:()=>{if(MUSIC.on&&!muted&&performance.now()-(MUSIC.unlockedAt||-1e9)<600){musicStart();paintMusic();return;}if(muted){muted=false;try{localStorage.setItem(MUTE_KEY,'0');}catch(e){}paintSound();MUSIC.on=true;}else MUSIC.on=!MUSIC.on;try{localStorage.setItem(MUSIC_KEY,MUSIC.on?'1':'0');}catch(e){}if(MUSIC.on)musicStart();else musicStop(.3);paintMusic();},
   fullscreen:()=>goFullscreen(),
   manage:()=>showManage(),
-  up:b=>{const i=+b.dataset.i;if(canUpgrade(cur(),i)){upgrade(i);after(b);}},
-  down:b=>{const i=+b.dataset.i;if(S.own[i]&&S.own[i].owner===cur().id&&S.own[i].level>0){sellUpgrade(i);after(b);}},
-  mort:b=>{const i=+b.dataset.i;if(canMortgage(i)&&S.own[i].owner===cur().id){mortgage(i);after(b);}},
-  unmort:b=>{const i=+b.dataset.i;if(S.own[i]&&S.own[i].owner===cur().id){unmortgage(i);after(b);}},
+  up:b=>{if(gameAct('up',b)&&!isGuest())after(b);},
+  down:b=>{if(gameAct('down',b)&&!isGuest())after(b);},
+  mort:b=>{if(gameAct('mort',b)&&!isGuest())after(b);},
+  unmort:b=>{if(gameAct('unmort',b)&&!isGuest())after(b);},
   trade:()=>startTrade(),
-  loan:b=>{const p=cur();if(p.loan||p.cpu)return;const n=+b.dataset.v;p.cash+=n;p.loan={owe:Math.round(n*1.3),due:S.round+3};sfx('coin');log(T(`🦈 ${p.name} prende ${fmt(n)} dallo strozzino`,`🦈 ${p.name} borrows ${fmt(n)} from the loan shark`));save();render();showManage();},
-  repay:()=>{const p=cur();if(!p.loan||p.cash<p.loan.owe)return;p.cash-=p.loan.owe;log(T(`${p.name} salda lo strozzino (${fmt(p.loan.owe)})`,`${p.name} pays off the loan shark (${fmt(p.loan.owe)})`));p.loan=null;sfx('pay');save();render();showManage();},
+  loan:b=>{if(gameAct('loan',b)&&!isGuest())showManage();},
+  repay:b=>{if(gameAct('repay',b)&&!isGuest())showManage();},
   diff:b=>{syncNames();setup.diff=b.dataset.v;showSetup();},
   mode:b=>{syncNames();setup.mode=b.dataset.v;showSetup();},
   climit:b=>{syncNames();setup.climit=+b.dataset.v;showSetup();},
   nextrace:()=>{const c=S.champ;if(!c||c.idx>=c.n-1)return;c.idx++;startGame(c);},
   tutorial:()=>{closeSheet();tutorial();},
+  online:()=>showOnline(),resumeon:netTry(()=>resumeOnline()),
+  quick:netTry(()=>quickMatch()),create:netTry(()=>createRoom(false)),
+  join:netTry(()=>joinRoom(($('#ocode')||{}).value)),rejoin:netTry(b=>joinRoom(b.dataset.v)),
+  copylink:()=>{const el=$('#olink');if(!el)return;const t=el.value;const ok=()=>{el.select();};try{navigator.clipboard.writeText(t).then(()=>sfx('coin'),ok);}catch(e){ok();}},
+  addcpu:()=>{if(!NET.host||NET.started)return;NET.cpus=Math.min(NET.cpus+1,5);NET.db.update(room('meta'),{cpus:NET.cpus});showLobby();},
+  rmcpu:()=>{if(!NET.host||NET.started)return;NET.cpus=Math.max(0,NET.cpus-1);NET.db.update(room('meta'),{cpus:NET.cpus});showLobby();},
+  cpustart:()=>{if(!NET.host||NET.started)return;NET.cpus=2;startOnline();},
+  ostart:()=>{if(NET.host&&!NET.started)startOnline();},
+  oleave:()=>{if(NET.host&&NET.started&&S&&!S.over&&!NET.confirmLeave){NET.confirmLeave=true;openSheet(`<h2>🏳️ ${T('Chiudere la partita per tutti?','End the game for everyone?')}</h2><p>${T('Sei l\'host: se esci, la partita finisce anche per gli altri.','You are the host: if you leave, the game ends for everyone.')}</p><div class="row"><button class="btn primary" data-act="oleave">${T('Sì, chiudi','Yes, end it')}</button><button class="btn out" data-act="close">${T('Annulla','Cancel')}</button></div>`);return;}
+    NET.confirmLeave=false;quitToMenu(true);},
+  orematch:()=>{if(!NET.host)return;GEN++;busy=false;cpuActive=false;NET.started=false;NET.overShown=false;S=null;$('#cars').innerHTML='';closeSheet();render();NET.db.update(room('meta'),{status:'lobby'});NET.db.remove(room('state'));showLobby();},
   lang:()=>{try{localStorage.setItem(LANG_KEY,LANG==='en'?'it':'en');}catch(e){}if(S&&!S.over)save();location.reload();},
   tradefor:b=>{closeSheet();startTrade({to:+b.dataset.o,get:b.dataset.i!==undefined?[+b.dataset.i]:[]});},
   'tr-to':b=>{readSelects();TR.o.to=+b.dataset.i;TR.o.get=[];TR.o.cashGet=0;paintEditor();},
@@ -1713,7 +2077,7 @@ const ACT={
   col:b=>{syncNames();const p=setup.players[+b.dataset.i],used=setup.players.map(x=>x.color);let k=COLORS.indexOf(p.color);for(let n=0;n<6;n++){k=(k+1)%6;if(!used.includes(COLORS[k]))break;}p.color=COLORS[k];showSetup();},
 };
 function after(b){save();render();if(b.dataset.ctx==='info')showInfo(+b.dataset.i);else showManage();}
-const NO_GAME_OK=['lang','music','pause','home','menu','tomenu','abandon','doabandon','resume','newsingle','newchamp','learn','fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info','diff','autoend','mode','climit','tutorial'];
+const NO_GAME_OK=['online','resumeon','quick','create','join','rejoin','copylink','addcpu','rmcpu','cpustart','ostart','oleave','orematch','lang','music','pause','home','menu','tomenu','abandon','doabandon','resume','newsingle','newchamp','learn','fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info','diff','autoend','mode','climit','tutorial'];
 document.addEventListener('pointerdown',()=>{MUSIC.unlockedAt=performance.now();ac();setTimeout(musicStart,30);},{once:true});
 document.addEventListener('click',e=>{
   const c=e.target.closest('[data-choice]');
@@ -1726,11 +2090,11 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&!$('#backdrop').hidden&&sheetDismiss){closeSheet();return;}
-  if(!S||S.over||!$('#backdrop').hidden||cur().cpu||e.target.closest('input,select,textarea'))return;
+  if(!S||S.over||!$('#backdrop').hidden||!isMine(cur())||e.target.closest('input,select,textarea'))return;
   const k=e.key.toLowerCase();
-  if(k===' '||k==='enter'){e.preventDefault();if(S.phase==='roll')roll();else if(S.phase==='end')endTurn();}
-  else if(k==='c'&&S.phase==='buy')buy();
-  else if(k==='a'&&S.phase==='buy')toAuction();
+  if(k===' '||k==='enter'){e.preventDefault();if(S.phase==='roll')gameAct('roll');else if(S.phase==='end')gameAct('end');}
+  else if(k==='c'&&S.phase==='buy')gameAct('buy');
+  else if(k==='a'&&S.phase==='buy')gameAct('auction');
 });
 let wakeLock=null;
 async function keepAwake(){try{if(!wakeLock&&navigator.wakeLock){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>wakeLock=null);}}catch(e){}}
@@ -1739,6 +2103,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 // ================= Avvio =================
 function boot(){
   applyStatic();paintSound();buildBoard();render();showMenu();
+  const hm=/^#([A-Za-z]{5})$/.exec(location.hash);if(hm)showOnline(hm[1].toUpperCase());
 }
 boot();
 // Funzionamento offline: solo nella versione pubblicata come app (con manifest), non nell'anteprima.

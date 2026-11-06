@@ -1,0 +1,47 @@
+{
+  "rules": {
+    "pt": {
+      "public": {
+        ".read": "auth != null",
+        ".indexOn": ["ts"],
+        "$code": {
+          ".write": "auth != null",
+          ".validate": "!newData.exists() || newData.hasChildren(['n', 'max', 'ts'])",
+          "n": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 6" }
+        }
+      },
+      "rooms": {
+        "$code": {
+          ".read": "auth != null",
+          ".write": "auth != null && data.child('meta/host').val() === auth.uid && !newData.exists()",
+          "meta": {
+            ".write": "auth != null && (!data.exists() || data.child('host').val() === auth.uid)"
+          },
+          "players": {
+            "$uid": {
+              ".write": "auth != null && ($uid === auth.uid || root.child('pt/rooms/' + $code + '/meta/host').val() === auth.uid)",
+              "name": { ".validate": "newData.isString() && newData.val().length <= 12" }
+            }
+          },
+          "state": {
+            ".write": "auth != null && root.child('pt/rooms/' + $code + '/meta/host').val() === auth.uid",
+            ".validate": "!newData.exists() || (newData.child('j').isString() && newData.child('j').val().length < 100000)"
+          },
+          "fx": {
+            ".write": "auth != null && root.child('pt/rooms/' + $code + '/meta/host').val() === auth.uid"
+          },
+          "to": {
+            "$uid": {
+              ".write": "auth != null && root.child('pt/rooms/' + $code + '/meta/host').val() === auth.uid"
+            }
+          },
+          "inbox": {
+            "$msg": {
+              ".write": "auth != null && (root.child('pt/rooms/' + $code + '/meta/host').val() === auth.uid || (!data.exists() && newData.child('from').val() === auth.uid && root.child('pt/rooms/' + $code + '/players/' + auth.uid).exists()))"
+            }
+          }
+        }
+      }
+    }
+  }
+}
