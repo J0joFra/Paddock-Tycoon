@@ -5,7 +5,7 @@ Compra circuiti, costruisci tribune, ospita il Gran Premio e manda in bancarotta
 
 ## Come si gioca
 
-- **Online** (Firebase): stanza con codice o link per gli amici, oppure partita casuale; se qualcuno si disconnette guida la CPU. Da attivare seguendo [docs/ONLINE-FIREBASE.md](docs/ONLINE-FIREBASE.md).
+- **Online** (Firebase): stanza con codice o link per gli amici, oppure partite veloci pubbliche (elenco delle partite in attesa, 3-6 piloti, avvio deciso dall'host); se qualcuno si disconnette guida la CPU. Da attivare seguendo [docs/ONLINE-FIREBASE.md](docs/ONLINE-FIREBASE.md).
 
 - **Durata**: 12, 20 (predefinita) o 30 giri, oppure fino all'ultimo in gara. **Fine turno automatico** attivabile nella griglia di partenza.
 - Quando compri, il gioco ti segnala se completi un gruppo o se blocchi un avversario; la scheda di un circuito mostra i proprietari del suo gruppo.

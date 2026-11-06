@@ -41,8 +41,9 @@ La protezione vera sono le regole del database e l'accesso anonimo.
 
 ## Come funziona per i giocatori
 - **Crea stanza per amici**: codice di 5 lettere e link da condividere; l'host può aggiungere CPU.
-- **Partita casuale**: entra in una stanza pubblica in attesa o ne crea una; si parte 20 secondi dopo che ci sono
-  almeno 2 giocatori (subito con 4). Da soli, dopo 25 secondi si può iniziare con le CPU.
+- **Partite veloci**: si apre l'elenco delle partite pubbliche in attesa (host, piloti presenti su 6) e si entra con un tocco,
+  oppure se ne crea una nuova. Massimo 6 piloti; l'host la avvia quando vuole da 3 piloti in su (parte da sola a 6).
+  Chi resta da solo per 45 secondi può iniziare con le CPU.
 - Se un giocatore si disconnette, la CPU guida al posto suo finché non rientra con il codice.
 - Se l'host si disconnette, gli altri vedono un avviso; l'host riprende dal menu con **Riprendi partita online**.
 - Le trattative "sotto banco" restano private tra i due giocatori coinvolti.

@@ -326,6 +326,13 @@ body{overflow:hidden;box-sizing:border-box;padding-block:6px;padding-right:max(3
 .code{font-style:normal;letter-spacing:.15em;background:var(--ink);color:var(--surface);border-radius:8px;padding:0 8px}
 .netpill{position:fixed;top:calc(4px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:16;background:var(--ink);color:var(--surface);font-size:11px;font-weight:700;letter-spacing:.06em;padding:2px 10px;border-radius:20px;pointer-events:none}
 .netpill.warn{background:var(--red)}
+/* Elenco partite veloci */
+.qlist{display:grid;gap:6px}
+.qroom{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;gap:10px;background:var(--surface-2);border:1.5px solid transparent;border-radius:12px;padding:8px 12px;text-align:left;cursor:pointer;font:inherit;color:var(--ink)}
+.qroom:hover,.qroom:focus-visible{border-color:var(--red);outline:none}
+.qhost{font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qn{color:var(--red);letter-spacing:1px;font-size:13px}
+.qroom b{font-variant-numeric:tabular-nums}
 /* Logo */
 .brandlogo{display:block;height:auto;font-style:normal;font-weight:400;filter:drop-shadow(0 6px 10px rgba(21,23,28,.18))}
 .center .brand .brandlogo{width:clamp(110px,31vmin,250px)}
@@ -1657,6 +1664,7 @@ const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
 const lsSet=(k,v)=>{try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}};
 function genCode(){const A='ABCDEFGHJKLMNPQRSTUVWXYZ';let c='';for(let i=0;i<5;i++)c+=A[Math.floor(Math.random()*A.length)];return c;}
 const room=p=>`rooms/${NET.code}${p?'/'+p:''}`;
+const PUB_MAX=6,PUB_MIN=3;
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('script'));document.head.appendChild(s);});}
 const useLocalNet=()=>lsGet('paddock-tycoon-localnet')==='1';
 const onlineReady=()=>!!FIREBASE_CONFIG||useLocalNet();
@@ -1755,7 +1763,7 @@ function showOnline(code=''){
   openSheet(`<h2>🌐 ${T('Gioca online','Play online')}</h2>
     <label class="fld" for="oname">${T('Il tuo nome','Your name')}<input type="text" id="oname" maxlength="12" value="${esc(lsGet(NAME_KEY)||'')}" placeholder="${T('Nome pilota','Driver name')}"></label>
     <div class="plist">
-      <button class="btn primary" data-act="quick">⚡ ${T('Partita casuale','Random match')} <small>${T('con altri giocatori','with other players')}</small></button>
+      <button class="btn primary" data-act="quick">⚡ ${T('Partite veloci','Quick games')} <small>${T('con altri giocatori, 3-6 piloti','with other players, 3-6 drivers')}</small></button>
       <button class="btn dark" data-act="create">➕ ${T('Crea stanza per amici','Create a room for friends')}</button>
       <div class="joinrow"><input type="text" id="ocode" maxlength="5" placeholder="${T('CODICE','CODE')}" value="${esc(code)}" autocapitalize="characters" autocomplete="off" aria-label="${T('Codice stanza','Room code')}"><button class="btn" data-act="join">🔑 ${T('Entra','Join')}</button></div>
       ${last&&!code?`<button class="btn" data-act="rejoin" data-v="${esc(last)}">↩︎ ${T('Rientra nella stanza','Rejoin room')} ${esc(last)}</button>`:''}
@@ -1771,15 +1779,15 @@ function lobbyHTML(){
     +Array.from({length:cpus},(_,k)=>`<div class="seat">${tok({color:COLORS[(ids.length+k)%6]})}<b>CPU ${k+1}</b><span class="b">🤖</span></div>`).join('');
   const cd=NET.host?NET.cd:meta.cd;
   const top=NET.pub
-    ?`<p>${ids.length<2?T('⏳ Cerchiamo altri giocatori…','⏳ Looking for other players…'):T('🚦 Si parte tra','🚦 Starting in')+` <b>${cd!=null?cd:'…'}s</b>`}</p>`
+    ?`<p>${ids.length<PUB_MIN?T(`⏳ Piloti in attesa: <b>${ids.length}/${PUB_MAX}</b> · si parte da ${PUB_MIN}`,`⏳ Drivers waiting: <b>${ids.length}/${PUB_MAX}</b> · starts from ${PUB_MIN}`):T(`✅ <b>${ids.length}/${PUB_MAX}</b> piloti: ${NET.host?'puoi partire quando vuoi':"l'host può partire"}`,`✅ <b>${ids.length}/${PUB_MAX}</b> drivers: ${NET.host?'you can start whenever you like':'the host can start'}`)}</p>`
     :`<div class="joinrow"><input type="text" readonly value="${esc(link)}" id="olink" aria-label="Link"><button class="btn" data-act="copylink">📋 ${T('Copia link','Copy link')}</button></div><p>${T('Gli amici aprono il link, oppure scelgono “Entra” e scrivono il codice.','Friends open the link, or tap “Join” and type the code.')}</p>`;
-  const lonely=NET.pub&&ids.length<2&&Date.now()-(NET.lobbyT||0)>25000;
-  return `<h2>${NET.pub?'⚡ '+T('Partita casuale','Random match'):'🔑 '+T('Stanza','Room')} <span class="code">${esc(NET.code)}</span></h2>${top}
+  const lonely=NET.pub&&ids.length<2&&Date.now()-(NET.lobbyT||0)>45000;
+  return `<h2>${NET.pub?'⚡ '+T('Partita veloce','Quick game'):'🔑 '+T('Stanza','Room')} <span class="code">${esc(NET.code)}</span></h2>${top}
     <div class="seats">${seats}</div>
     ${NET.host
       ?`<div class="row">${NET.pub?(lonely?`<button class="btn sm" data-act="cpustart">🤖 ${T('Intanto gioca con le CPU','Play with CPUs meanwhile')}</button>`:''):`<button class="btn sm" data-act="addcpu" ${ids.length+cpus>=6?'disabled':''}>+ CPU</button><button class="btn sm" data-act="rmcpu" ${cpus?'':'disabled'}>− CPU</button>`}</div>
-        <div class="row">${NET.pub?'':`<button class="btn primary" data-act="ostart" ${ids.length+cpus>=2?'':'disabled'}>🚦 ${T('Via!','Go!')}</button>`}<button class="btn out" data-act="oleave">${T('Esci','Leave')}</button></div>`
-      :`<p class="waitline">⏳ ${NET.pub?T('Attendi gli altri piloti…','Waiting for the other drivers…'):T("In attesa che l'host avvii la partita…",'Waiting for the host to start…')}</p><div class="row"><button class="btn out" data-act="oleave">${T('Esci','Leave')}</button></div>`}`;
+        <div class="row"><button class="btn primary" data-act="ostart" ${(NET.pub?ids.length>=PUB_MIN:ids.length+cpus>=2)?'':'disabled'}>🚦 ${T('Via!','Go!')}${NET.pub&&ids.length<PUB_MIN?` <small>(min ${PUB_MIN})</small>`:''}</button><button class="btn out" data-act="oleave">${T('Esci','Leave')}</button></div>`
+      :`<p class="waitline">⏳ ${NET.pub?T(`L'host avvia la partita da ${PUB_MIN} piloti in su…`,`The host starts the game from ${PUB_MIN} drivers…`):T("In attesa che l'host avvii la partita…",'Waiting for the host to start…')}</p><div class="row"><button class="btn out" data-act="oleave">${T('Esci','Leave')}</button></div>`}`;
 }
 function showLobby(){if(!NET.on||NET.started)return;openSheet(lobbyHTML(),false);}
 
@@ -1792,7 +1800,7 @@ async function createRoom(pub){
   await db.set(room('meta'),{host:NET.uid,pub:!!pub,status:'lobby',ts:Date.now(),hostOnline:true,cpus:NET.cpus});
   db.onDisc(room('meta/hostOnline'),false);
   await joinSelf(name);
-  if(pub){await db.set(`public/${code}`,{n:1,max:4,ts:Date.now()});db.onDisc(`public/${code}`,null);}
+  if(pub){await db.set(`public/${code}`,{n:1,max:PUB_MAX,ts:Date.now(),host:name});db.onDisc(`public/${code}`,null);}
   if(!pub)lsSet(LAST_ROOM,code);
   hostListen();showLobby();
 }
@@ -1812,12 +1820,26 @@ async function joinRoom(code,quiet){
   else{guestListen();if(meta.status==='lobby')showLobby();else openSheet(`<p class="waitline">⏳ ${T('Rientro in partita…','Rejoining the game…')}</p>`,false);}
   return true;
 }
+function closeQuickList(){if(NET.listOff){NET.listOff();NET.listOff=null;}clearInterval(NET.listT);NET.listT=null;}
 async function quickMatch(){
-  readName();await netInit();const db=NET.db;
-  const list=await db.get('public')||{},now=Date.now();
-  const cand=Object.entries(list).filter(([,v])=>v&&v.n<v.max&&now-v.ts<180000).sort((a,b)=>a[1].ts-b[1].ts);
-  for(const [code] of cand){const r=await db.txn(`public/${code}/n`,n=>n==null||n>=4?undefined:n+1);if(r.committed&&await joinRoom(code,true))return;}
-  await createRoom(true);
+  readName();await netInit();const db=NET.db;closeQuickList();
+  let last={};
+  const paint=list=>{
+    if(NET.on)return;last=list||{};
+    const now=Date.now();
+    const rooms=Object.entries(last).filter(([,v])=>v&&v.n<v.max&&now-v.ts<90000).sort((a,b)=>b[1].n-a[1].n||a[1].ts-b[1].ts);
+    openSheet(`<h2>⚡ ${T('Partite veloci','Quick games')}</h2>
+      <p>${rooms.length?T('Scegli una partita in attesa di piloti, oppure creane una nuova.','Pick a game waiting for drivers, or create a new one.'):T('Nessuna partita in attesa in questo momento: creane una e aspetta gli altri.','No games waiting right now: create one and wait for others.')}</p>
+      <div class="qlist">${rooms.map(([code,v])=>`<button class="qroom" data-act="qjoin" data-v="${esc(code)}"><span class="qhost">${esc(v.host||'?')}</span><span class="qn" aria-hidden="true">${'●'.repeat(Math.min(v.n,v.max))}${'○'.repeat(Math.max(0,v.max-v.n))}</span><b>${v.n}/${v.max}</b><span class="btn sm primary">${T('Entra','Join')}</span></button>`).join('')}</div>
+      <div class="row"><button class="btn dark" data-act="qnew">➕ ${T('Crea partita veloce','Create a quick game')}</button><button class="btn out" data-act="qback">${T('Indietro','Back')}</button></div>`,false);
+  };
+  NET.listOff=db.on('public',paint);
+  NET.listT=setInterval(()=>paint(last),15000);
+}
+async function quickJoin(code){
+  closeQuickList();const db=NET.db;
+  const r=await db.txn(`public/${code}/n`,n=>n==null||n>=PUB_MAX?undefined:n+1);
+  if(!r.committed||!await joinRoom(code,true)){toastSheet(T('Questa partita si è appena riempita o è partita. Scegline un\'altra.','That game just filled up or started. Pick another one.'));return;}
 }
 function toastSheet(msg){openSheet(`<h2>🌐 Online</h2><p>${msg}</p><div class="row"><button class="btn dark" data-act="online">${T('Indietro','Back')}</button></div>`,false);}
 
@@ -1830,14 +1852,12 @@ function hostListen(){
     else hostPresence(ps||{});}));
   NET.offs.push(db.onAdd(room('inbox'),(k,m)=>hostInbox(k,m)));
   db.update(room('meta'),{hostOnline:true});
-  if(NET.pub&&!NET.tick)NET.tick=setInterval(()=>{if(!NET.started)showLobby();},5000);
+  if(NET.pub&&!NET.tick)NET.tick=setInterval(()=>{if(NET.started)return;showLobby();if(Date.now()-(NET.beat||0)>20000){NET.beat=Date.now();db.update(`public/${NET.code}`,{ts:Date.now()});}},5000);
 }
 function pubCountdown(){
   if(!NET.host||!NET.pub||NET.started)return;
   const n=Object.values(NET.lobby.players||{}).filter(x=>x.online!==false).length;
-  if(n>=4){clearInterval(NET.cdT);NET.cdT=null;startOnline();return;}
-  if(n>=2&&!NET.cdT){NET.cd=20;NET.cdT=setInterval(()=>{NET.cd--;NET.db.update(room('meta'),{cd:NET.cd});if(NET.cd<=0){clearInterval(NET.cdT);NET.cdT=null;startOnline();}else showLobby();},1000);}
-  if(n<2&&NET.cdT){clearInterval(NET.cdT);NET.cdT=null;NET.cd=null;NET.db.update(room('meta'),{cd:null});}
+  if(n>=PUB_MAX)startOnline();
 }
 async function startOnline(){
   if(NET.started)return;NET.started=true;clearInterval(NET.cdT);clearInterval(NET.tick);NET.tick=null;
@@ -2056,13 +2076,13 @@ const ACT={
   nextrace:()=>{const c=S.champ;if(!c||c.idx>=c.n-1)return;c.idx++;startGame(c);},
   tutorial:()=>{closeSheet();tutorial();},
   online:()=>showOnline(),resumeon:netTry(()=>resumeOnline()),
-  quick:netTry(()=>quickMatch()),create:netTry(()=>createRoom(false)),
+  quick:netTry(()=>quickMatch()),qjoin:netTry(b=>quickJoin(b.dataset.v)),qnew:netTry(()=>{closeQuickList();return createRoom(true);}),qback:()=>{closeQuickList();showOnline();},create:netTry(()=>createRoom(false)),
   join:netTry(()=>joinRoom(($('#ocode')||{}).value)),rejoin:netTry(b=>joinRoom(b.dataset.v)),
   copylink:()=>{const el=$('#olink');if(!el)return;const t=el.value;const ok=()=>{el.select();};try{navigator.clipboard.writeText(t).then(()=>sfx('coin'),ok);}catch(e){ok();}},
   addcpu:()=>{if(!NET.host||NET.started)return;NET.cpus=Math.min(NET.cpus+1,5);NET.db.update(room('meta'),{cpus:NET.cpus});showLobby();},
   rmcpu:()=>{if(!NET.host||NET.started)return;NET.cpus=Math.max(0,NET.cpus-1);NET.db.update(room('meta'),{cpus:NET.cpus});showLobby();},
   cpustart:()=>{if(!NET.host||NET.started)return;NET.cpus=2;startOnline();},
-  ostart:()=>{if(NET.host&&!NET.started)startOnline();},
+  ostart:()=>{if(!NET.host||NET.started)return;const n=Object.values(NET.lobby.players||{}).filter(x=>x.online!==false).length;if(NET.pub&&n<PUB_MIN)return;startOnline();},
   oleave:()=>{if(NET.host&&NET.started&&S&&!S.over&&!NET.confirmLeave){NET.confirmLeave=true;openSheet(`<h2>🏳️ ${T('Chiudere la partita per tutti?','End the game for everyone?')}</h2><p>${T('Sei l\'host: se esci, la partita finisce anche per gli altri.','You are the host: if you leave, the game ends for everyone.')}</p><div class="row"><button class="btn primary" data-act="oleave">${T('Sì, chiudi','Yes, end it')}</button><button class="btn out" data-act="close">${T('Annulla','Cancel')}</button></div>`);return;}
     NET.confirmLeave=false;quitToMenu(true);},
   orematch:()=>{if(!NET.host)return;GEN++;busy=false;cpuActive=false;NET.started=false;NET.overShown=false;S=null;$('#cars').innerHTML='';closeSheet();render();NET.db.update(room('meta'),{status:'lobby'});NET.db.remove(room('state'));showLobby();},
@@ -2085,7 +2105,7 @@ const ACT={
   col:b=>{syncNames();const p=setup.players[+b.dataset.i],used=setup.players.map(x=>x.color);let k=COLORS.indexOf(p.color);for(let n=0;n<6;n++){k=(k+1)%6;if(!used.includes(COLORS[k]))break;}p.color=COLORS[k];showSetup();},
 };
 function after(b){save();render();if(b.dataset.ctx==='info')showInfo(+b.dataset.i);else showManage();}
-const NO_GAME_OK=['online','resumeon','quick','create','join','rejoin','copylink','addcpu','rmcpu','cpustart','ostart','oleave','orematch','lang','music','pause','home','menu','tomenu','abandon','doabandon','resume','newsingle','newchamp','learn','fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info','diff','autoend','mode','climit','tutorial'];
+const NO_GAME_OK=['qjoin','qnew','qback','online','resumeon','quick','create','join','rejoin','copylink','addcpu','rmcpu','cpustart','ostart','oleave','orematch','lang','music','pause','home','menu','tomenu','abandon','doabandon','resume','newsingle','newchamp','learn','fullscreen','sound','setup','start','rules','close','add','rm','human','cpu','col','lim','pace','info','diff','autoend','mode','climit','tutorial'];
 document.addEventListener('pointerdown',()=>{MUSIC.unlockedAt=performance.now();ac();setTimeout(musicStart,30);},{once:true});
 document.addEventListener('click',e=>{
   const c=e.target.closest('[data-choice]');
