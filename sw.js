@@ -1,5 +1,5 @@
 // Service worker di Paddock Tycoon: il gioco funziona anche offline dopo la prima apertura.
-const CACHE = 'paddock-tycoon-v8';
+const CACHE = 'paddock-tycoon-v9';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icons/icon-192.png', './icons/icon-512.png', './privacy.html'];
 
 self.addEventListener('install', e => {
